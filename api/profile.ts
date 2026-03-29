@@ -1,9 +1,4 @@
-// Vercel Serverless Function — Full profile submission
-// 1. Validates signed token (only the email recipient can submit)
-// 2. Updates Brevo contact with full profile data
-// 3. Notifies Telegram group with all submitted data
-
-import { verifyToken } from './_token.js'
+import { createHmac } from 'node:crypto'
 
 const BREVO_CONTACTS_URL = 'https://api.brevo.com/v3/contacts'
 
@@ -16,13 +11,45 @@ interface ProfileBody {
   year:       string
 }
 
+// ── Token (inlined — no cross-file imports) ───────────────────────────────────
+
+function verifyToken(token: string): { valid: boolean; email?: string } {
+  try {
+    const secret   = process.env.TOKEN_SECRET ?? 'dev-secret'
+    const lastDot  = token.lastIndexOf('.')
+    if (lastDot === -1) return { valid: false }
+
+    const payload  = token.slice(0, lastDot)
+    const sig      = token.slice(lastDot + 1)
+    const expected = createHmac('sha256', secret).update(payload).digest('base64url')
+    if (sig !== expected) return { valid: false }
+
+    const { email, ts } = JSON.parse(Buffer.from(payload, 'base64url').toString())
+    if (typeof email !== 'string' || typeof ts !== 'number') return { valid: false }
+    if (Date.now() - ts > 48 * 60 * 60 * 1000) return { valid: false }
+
+    return { valid: true, email }
+  } catch {
+    return { valid: false }
+  }
+}
+
+// ── Fetch with timeout ────────────────────────────────────────────────────────
+
+function fetchT(url: string, opts: RequestInit, ms = 8000): Promise<Response> {
+  const ctrl = new AbortController()
+  const id   = setTimeout(() => ctrl.abort(), ms)
+  return fetch(url, { ...opts, signal: ctrl.signal }).finally(() => clearTimeout(id))
+}
+
+// ── Brevo: update full profile ────────────────────────────────────────────────
+
 async function updateBrevoProfile(email: string, data: Omit<ProfileBody, 'token'>): Promise<void> {
   const apiKey = process.env.BREVO_API_KEY
   const listId = Number(process.env.BREVO_LIST_ID)
-
   if (!apiKey || !listId) throw new Error('Brevo not configured on server.')
 
-  const res = await fetch(BREVO_CONTACTS_URL, {
+  const res = await fetchT(BREVO_CONTACTS_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'api-key': apiKey },
     body: JSON.stringify({
@@ -46,39 +73,36 @@ async function updateBrevoProfile(email: string, data: Omit<ProfileBody, 'token'
   }
 }
 
-async function notifyTelegramProfile(email: string, data: Omit<ProfileBody, 'token'>): Promise<void> {
+// ── Telegram: notify with full profile data (fire-and-forget) ─────────────────
+
+async function notifyTelegram(email: string, data: Omit<ProfileBody, 'token'>): Promise<void> {
   const botToken = process.env.TELEGRAM_BOT_TOKEN
   const groupId  = process.env.TELEGRAM_GROUP_ID
-
   if (!botToken || !groupId) return
 
-  const esc = (v: string) => v || '—'
-
+  const e = (v: string) => v || '—'
   const text =
     `📋 <b>New Profile Completed!</b>\n\n` +
     `📧 Email: <code>${email}</code>\n` +
-    `👤 Name: ${esc(data.firstName)} ${esc(data.lastName)}\n` +
-    `🏫 School: ${esc(data.schoolName)}\n` +
-    `🏙️ City: ${esc(data.cityName)}\n` +
-    `📅 Year: ${esc(data.year)}`
+    `👤 Name: ${e(data.firstName)} ${e(data.lastName)}\n` +
+    `🏫 School: ${e(data.schoolName)}\n` +
+    `🏙️ City: ${e(data.cityName)}\n` +
+    `📅 Year: ${e(data.year)}`
 
-  await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chat_id: groupId, text, parse_mode: 'HTML' }),
-  })
+  await fetchT(
+    `https://api.telegram.org/bot${botToken}/sendMessage`,
+    { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: groupId, text, parse_mode: 'HTML' }) },
+    5000,
+  )
 }
 
-export default async function handler(req: Request): Promise<Response> {
-  if (req.method !== 'POST') {
-    return new Response('Method not allowed', { status: 405 })
-  }
+// ── Handler ───────────────────────────────────────────────────────────────────
+
+export async function POST(req: Request): Promise<Response> {
   let body: Partial<ProfileBody>
-  try {
-    body = await req.json()
-  } catch {
-    return new Response('Invalid JSON', { status: 400 })
-  }
+  try { body = await req.json() }
+  catch { return new Response('Invalid JSON', { status: 400 }) }
 
   const { token, firstName = '', lastName = '', schoolName = '', cityName = '', year = '' } = body
 
@@ -86,7 +110,6 @@ export default async function handler(req: Request): Promise<Response> {
     return Response.json({ error: 'Missing token.' }, { status: 400 })
   }
 
-  // Validate token — only the email recipient can submit
   const result = verifyToken(token)
   if (!result.valid) {
     return Response.json(
@@ -99,10 +122,7 @@ export default async function handler(req: Request): Promise<Response> {
 
   try {
     await updateBrevoProfile(email, { firstName, lastName, schoolName, cityName, year })
-
-    // Fire-and-forget — Telegram must never block the response
-    notifyTelegramProfile(email, { firstName, lastName, schoolName, cityName, year }).catch(() => { /* ignore */ })
-
+    notifyTelegram(email, { firstName, lastName, schoolName, cityName, year }).catch(() => { /* ignore */ })
     return Response.json({ ok: true })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Submission failed.'

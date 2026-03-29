@@ -1,12 +1,25 @@
-// Vercel Serverless Function — Landing form handler
-// 1. Adds email to Brevo list
-// 2. Sends transactional email with a signed signup link
-// 3. Notifies Telegram group (fire-and-forget)
+import { createHmac } from 'node:crypto'
 
-import { generateToken } from './_token.js'
-
-const BREVO_CONTACTS_URL     = 'https://api.brevo.com/v3/contacts'
+const BREVO_CONTACTS_URL      = 'https://api.brevo.com/v3/contacts'
 const BREVO_TRANSACTIONAL_URL = 'https://api.brevo.com/v3/smtp/email'
+
+// ── Token (inlined — no cross-file imports) ───────────────────────────────────
+
+function generateToken(email: string): string {
+  const secret  = process.env.TOKEN_SECRET ?? 'dev-secret'
+  const ts      = Date.now()
+  const payload = Buffer.from(JSON.stringify({ email, ts })).toString('base64url')
+  const sig     = createHmac('sha256', secret).update(payload).digest('base64url')
+  return `${payload}.${sig}`
+}
+
+// ── Fetch with timeout ────────────────────────────────────────────────────────
+
+function fetchT(url: string, opts: RequestInit, ms = 8000): Promise<Response> {
+  const ctrl = new AbortController()
+  const id   = setTimeout(() => ctrl.abort(), ms)
+  return fetch(url, { ...opts, signal: ctrl.signal }).finally(() => clearTimeout(id))
+}
 
 function getBaseUrl(req: Request): string {
   const host  = req.headers.get('x-forwarded-host') ?? req.headers.get('host') ?? 'localhost:3000'
@@ -14,13 +27,14 @@ function getBaseUrl(req: Request): string {
   return `${proto}://${host}`
 }
 
+// ── Brevo: add to list ────────────────────────────────────────────────────────
+
 async function addToBrevo(email: string, source: string): Promise<void> {
   const apiKey = process.env.BREVO_API_KEY
   const listId = Number(process.env.BREVO_LIST_ID)
-
   if (!apiKey || !listId) throw new Error('Brevo not configured on server.')
 
-  const res = await fetch(BREVO_CONTACTS_URL, {
+  const res = await fetchT(BREVO_CONTACTS_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'api-key': apiKey },
     body: JSON.stringify({
@@ -37,16 +51,17 @@ async function addToBrevo(email: string, source: string): Promise<void> {
   }
 }
 
+// ── Brevo: send access email ──────────────────────────────────────────────────
+
 async function sendAccessEmail(email: string, token: string, baseUrl: string): Promise<void> {
   const apiKey      = process.env.BREVO_API_KEY
   const senderEmail = process.env.BREVO_SENDER_EMAIL
   const senderName  = process.env.BREVO_SENDER_NAME ?? 'SyiyQ'
-
-  if (!apiKey || !senderEmail) throw new Error('Email sender not configured on server.')
+  if (!apiKey || !senderEmail) throw new Error('BREVO_SENDER_EMAIL is not set in environment variables.')
 
   const link = `${baseUrl}/signup?token=${encodeURIComponent(token)}`
 
-  const res = await fetch(BREVO_TRANSACTIONAL_URL, {
+  const res = await fetchT(BREVO_TRANSACTIONAL_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'api-key': apiKey },
     body: JSON.stringify({
@@ -81,10 +96,11 @@ async function sendAccessEmail(email: string, token: string, baseUrl: string): P
   }
 }
 
-async function notifyTelegramGroup(email: string, source: string): Promise<void> {
+// ── Telegram (fire-and-forget) ────────────────────────────────────────────────
+
+async function notifyTelegram(email: string, source: string): Promise<void> {
   const botToken = process.env.TELEGRAM_BOT_TOKEN
   const groupId  = process.env.TELEGRAM_GROUP_ID
-
   if (!botToken || !groupId) return
 
   const text =
@@ -92,12 +108,15 @@ async function notifyTelegramGroup(email: string, source: string): Promise<void>
     `📧 Email: <code>${email}</code>\n` +
     `📍 Source: ${source}`
 
-  await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chat_id: groupId, text, parse_mode: 'HTML' }),
-  })
+  await fetchT(
+    `https://api.telegram.org/bot${botToken}/sendMessage`,
+    { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: groupId, text, parse_mode: 'HTML' }) },
+    5000,
+  )
 }
+
+// ── Handler ───────────────────────────────────────────────────────────────────
 
 export default async function handler(req: Request): Promise<Response> {
   if (req.method !== 'POST') {
@@ -105,11 +124,8 @@ export default async function handler(req: Request): Promise<Response> {
   }
 
   let body: { email?: string; source?: string }
-  try {
-    body = await req.json()
-  } catch {
-    return new Response('Invalid JSON', { status: 400 })
-  }
+  try { body = await req.json() }
+  catch { return new Response('Invalid JSON', { status: 400 }) }
 
   const email  = body?.email?.trim()
   const source = body?.source ?? 'meta_web'
@@ -125,8 +141,7 @@ export default async function handler(req: Request): Promise<Response> {
     const baseUrl = getBaseUrl(req)
     await sendAccessEmail(email, token, baseUrl)
 
-    // Fire-and-forget — must never block the response
-    notifyTelegramGroup(email, source).catch(() => { /* ignore */ })
+    notifyTelegram(email, source).catch(() => { /* ignore */ })
 
     return Response.json({ ok: true })
   } catch (err) {

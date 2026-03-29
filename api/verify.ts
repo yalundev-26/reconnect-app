@@ -41,7 +41,10 @@ async function verifyToken(token: string): Promise<{ valid: boolean; email?: str
 
 // ── Handler ───────────────────────────────────────────────────────────────────
 
-export async function GET(req: Request): Promise<Response> {
+export default async function handler(req: Request): Promise<Response> {
+  if (req.method !== 'GET') {
+    return new Response('Method not allowed', { status: 405 })
+  }
   const url   = new URL(req.url)
   const token = url.searchParams.get('token') ?? ''
 

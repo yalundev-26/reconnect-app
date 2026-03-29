@@ -45,7 +45,17 @@ function getBaseUrl(req: Request): string {
 
 // ── Brevo: add to list ────────────────────────────────────────────────────────
 
-async function addToBrevo(email: string, source: string): Promise<void> {
+interface LeadData {
+  email:      string
+  source:     string
+  firstName?: string
+  lastName?:  string
+  schoolName?: string
+  cityName?:  string
+  year?:      string
+}
+
+async function addToBrevo(data: LeadData): Promise<void> {
   const apiKey = process.env.BREVO_API_KEY
   const listId = Number(process.env.BREVO_LIST_ID)
   if (!apiKey || !listId) throw new Error('Brevo not configured on server.')
@@ -54,8 +64,15 @@ async function addToBrevo(email: string, source: string): Promise<void> {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'api-key': apiKey },
     body: JSON.stringify({
-      email,
-      attributes: { SOURCE: source },
+      email: data.email,
+      attributes: {
+        SOURCE:    data.source,
+        FIRSTNAME: data.firstName ?? '',
+        LASTNAME:  data.lastName  ?? '',
+        SCHOOL:    data.schoolName ?? '',
+        CITY:      data.cityName  ?? '',
+        YEAR:      data.year      ?? '',
+      },
       listIds: [listId],
       updateEnabled: true,
     }),
@@ -277,15 +294,20 @@ async function sendAccessEmail(email: string, token: string, baseUrl: string): P
 
 // ── Telegram (fire-and-forget) ────────────────────────────────────────────────
 
-async function notifyTelegram(email: string, source: string): Promise<void> {
+async function notifyTelegram(data: LeadData): Promise<void> {
   const botToken = process.env.TELEGRAM_BOT_TOKEN
   const groupId  = process.env.TELEGRAM_GROUP_ID
   if (!botToken || !groupId) return
 
+  const e = (v?: string) => v || '—'
   const text =
     `🔔 <b>New Lead!</b>\n` +
-    `📧 Email: <code>${email}</code>\n` +
-    `📍 Source: ${source}`
+    `📧 Email: <code>${data.email}</code>\n` +
+    `👤 Name: ${e(data.firstName)} ${e(data.lastName)}\n` +
+    `🏫 School: ${e(data.schoolName)}\n` +
+    `🏙️ City: ${e(data.cityName)}\n` +
+    `📅 Year: ${e(data.year)}\n` +
+    `📍 Source: ${data.source}`
 
   await fetchT(
     `https://api.telegram.org/bot${botToken}/sendMessage`,
@@ -302,7 +324,7 @@ export default async function handler(req: Request): Promise<Response> {
     return new Response('Method not allowed', { status: 405 })
   }
 
-  let body: { email?: string; source?: string; _hp?: string }
+  let body: { email?: string; source?: string; _hp?: string; firstName?: string; lastName?: string; schoolName?: string; cityName?: string; year?: string }
   try { body = await req.json() }
   catch { return new Response('Invalid JSON', { status: 400 }) }
 
@@ -316,16 +338,26 @@ export default async function handler(req: Request): Promise<Response> {
     return Response.json({ error: 'Invalid email address.' }, { status: 422 })
   }
 
+  const leadData: LeadData = {
+    email,
+    source,
+    firstName:  body.firstName?.trim(),
+    lastName:   body.lastName?.trim(),
+    schoolName: body.schoolName?.trim(),
+    cityName:   body.cityName?.trim(),
+    year:       body.year?.trim(),
+  }
+
   try {
     const baseUrl = getBaseUrl(req)
     const token   = await generateToken(email)
 
     await Promise.all([
-      addToBrevo(email, source),
+      addToBrevo(leadData),
       sendAccessEmail(email, token, baseUrl),
     ])
 
-    await notifyTelegram(email, source).catch((err) => {
+    await notifyTelegram(leadData).catch((err) => {
       console.error('[Telegram] notifyTelegram failed:', err?.message ?? err)
     })
 

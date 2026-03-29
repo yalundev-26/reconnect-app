@@ -1,7 +1,18 @@
-// Vercel Serverless Function — Form submission handler
-// Adds contact to Brevo and notifies the Telegram group
+// Vercel Serverless Function — Landing form handler
+// 1. Adds email to Brevo list
+// 2. Sends transactional email with a signed signup link
+// 3. Notifies Telegram group (fire-and-forget)
 
-const BREVO_API_URL = 'https://api.brevo.com/v3/contacts'
+import { generateToken } from './_token'
+
+const BREVO_CONTACTS_URL     = 'https://api.brevo.com/v3/contacts'
+const BREVO_TRANSACTIONAL_URL = 'https://api.brevo.com/v3/smtp/email'
+
+function getBaseUrl(req: Request): string {
+  const host  = req.headers.get('x-forwarded-host') ?? req.headers.get('host') ?? 'localhost:3000'
+  const proto = host.includes('localhost') ? 'http' : 'https'
+  return `${proto}://${host}`
+}
 
 async function addToBrevo(email: string, source: string): Promise<void> {
   const apiKey = process.env.BREVO_API_KEY
@@ -9,7 +20,7 @@ async function addToBrevo(email: string, source: string): Promise<void> {
 
   if (!apiKey || !listId) throw new Error('Brevo not configured on server.')
 
-  const res = await fetch(BREVO_API_URL, {
+  const res = await fetch(BREVO_CONTACTS_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'api-key': apiKey },
     body: JSON.stringify({
@@ -26,18 +37,62 @@ async function addToBrevo(email: string, source: string): Promise<void> {
   }
 }
 
-async function notifyTelegramGroup(email: string, source: string): Promise<void> {
-  const token   = process.env.TELEGRAM_BOT_TOKEN
-  const groupId = process.env.TELEGRAM_GROUP_ID
+async function sendAccessEmail(email: string, token: string, baseUrl: string): Promise<void> {
+  const apiKey      = process.env.BREVO_API_KEY
+  const senderEmail = process.env.BREVO_SENDER_EMAIL
+  const senderName  = process.env.BREVO_SENDER_NAME ?? 'SyiyQ'
 
-  if (!token || !groupId) return // silently skip if not configured
+  if (!apiKey || !senderEmail) throw new Error('Email sender not configured on server.')
+
+  const link = `${baseUrl}/signup?token=${encodeURIComponent(token)}`
+
+  const res = await fetch(BREVO_TRANSACTIONAL_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'api-key': apiKey },
+    body: JSON.stringify({
+      sender: { name: senderName, email: senderEmail },
+      to: [{ email }],
+      subject: 'Your private access link 🔑',
+      htmlContent: `
+        <div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto;padding:32px 24px;background:#f4f7fb">
+          <div style="background:#fff;border-radius:16px;padding:40px;box-shadow:0 4px 24px rgba(15,23,42,0.08)">
+            <h2 style="margin:0 0 8px;font-size:22px;color:#0f172a">You're one step away 🎉</h2>
+            <p style="color:#64748b;margin:0 0 28px;font-size:15px">
+              Click the button below to complete your profile and join the community.
+              This link is private — it only works for <strong>${email}</strong> and expires in 48 hours.
+            </p>
+            <a href="${link}"
+               style="display:inline-block;background:#2563eb;color:#fff;font-weight:700;font-size:16px;
+                      padding:14px 28px;border-radius:10px;text-decoration:none">
+              Complete My Profile →
+            </a>
+            <p style="color:#94a3b8;margin:28px 0 0;font-size:12px">
+              If you didn't request this, you can safely ignore this email.
+            </p>
+          </div>
+        </div>
+      `,
+    }),
+  })
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err?.message ?? `Email send error ${res.status}`)
+  }
+}
+
+async function notifyTelegramGroup(email: string, source: string): Promise<void> {
+  const botToken = process.env.TELEGRAM_BOT_TOKEN
+  const groupId  = process.env.TELEGRAM_GROUP_ID
+
+  if (!botToken || !groupId) return
 
   const text =
     `🔔 <b>New Lead!</b>\n` +
     `📧 Email: <code>${email}</code>\n` +
     `📍 Source: ${source}`
 
-  await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+  await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ chat_id: groupId, text, parse_mode: 'HTML' }),
@@ -50,7 +105,6 @@ export default async function handler(req: Request): Promise<Response> {
   }
 
   let body: { email?: string; source?: string }
-
   try {
     body = await req.json()
   } catch {
@@ -67,7 +121,11 @@ export default async function handler(req: Request): Promise<Response> {
   try {
     await addToBrevo(email, source)
 
-    // Fire-and-forget — Telegram must never block the response
+    const token   = generateToken(email)
+    const baseUrl = getBaseUrl(req)
+    await sendAccessEmail(email, token, baseUrl)
+
+    // Fire-and-forget — must never block the response
     notifyTelegramGroup(email, source).catch(() => { /* ignore */ })
 
     return Response.json({ ok: true })

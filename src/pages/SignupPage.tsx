@@ -1,37 +1,58 @@
-import { useState, type ChangeEvent } from 'react'
-import { addContactToBrevo } from '../lib/brevo'
+import { useState, useEffect, type ChangeEvent } from 'react'
 
-interface SignupForm {
-  firstName: string
-  lastName: string
-  email: string
+interface ProfileForm {
+  firstName:  string
+  lastName:   string
   schoolName: string
-  cityName: string
-  year: string
-  password: string
+  cityName:   string
+  year:       string
 }
 
-const initial: SignupForm = {
-  firstName: '',
-  lastName: '',
-  email: '',
+const initial: ProfileForm = {
+  firstName:  '',
+  lastName:   '',
   schoolName: '',
-  cityName: '',
-  year: '',
-  password: '',
+  cityName:   '',
+  year:       '',
 }
 
-type Status = 'idle' | 'loading' | 'success' | 'error'
+type AuthState = 'checking' | 'valid' | 'invalid'
+type Status    = 'idle' | 'loading' | 'success' | 'error'
 
 const inputClass =
   'w-full px-4 py-3.5 border border-[#cbd5e1] rounded-[10px] text-[15px] outline-none focus:border-[#2563eb] transition-colors disabled:opacity-50'
 
 export default function SignupPage() {
-  const [form, setForm] = useState<SignupForm>(initial)
-  const [status, setStatus] = useState<Status>('idle')
+  const [authState, setAuthState] = useState<AuthState>('checking')
+  const [tokenEmail, setTokenEmail] = useState('')
+  const [form, setForm]   = useState<ProfileForm>(initial)
+  const [status, setStatus]   = useState<Status>('idle')
   const [errorMsg, setErrorMsg] = useState('')
 
-  function handleChange(e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
+  // ── Validate token from URL on mount ──────────────────────────────────────
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const token  = params.get('token')
+
+    if (!token) {
+      setAuthState('invalid')
+      return
+    }
+
+    fetch(`/api/verify?token=${encodeURIComponent(token)}`)
+      .then(r => r.json())
+      .then((data: { valid: boolean; email?: string }) => {
+        if (data.valid && data.email) {
+          setTokenEmail(data.email)
+          setAuthState('valid')
+        } else {
+          setAuthState('invalid')
+        }
+      })
+      .catch(() => setAuthState('invalid'))
+  }, [])
+
+  function handleChange(e: ChangeEvent<HTMLInputElement>) {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
   }
 
@@ -40,16 +61,20 @@ export default function SignupPage() {
     setStatus('loading')
     setErrorMsg('')
 
+    const token = new URLSearchParams(window.location.search).get('token') ?? ''
+
     try {
-      await addContactToBrevo({
-        email:      form.email,
-        firstName:  form.firstName,
-        lastName:   form.lastName,
-        schoolName: form.schoolName,
-        cityName:   form.cityName,
-        year:       form.year,
-        source:     'meta_web',
+      const res = await fetch('/api/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, ...form }),
       })
+
+      let data: { error?: string } = {}
+      try { data = await res.json() } catch { /* ignore */ }
+
+      if (!res.ok) throw new Error(data?.error ?? 'Submission failed.')
+
       setStatus('success')
     } catch (err) {
       setStatus('error')
@@ -57,6 +82,40 @@ export default function SignupPage() {
     }
   }
 
+  // ── Checking token ─────────────────────────────────────────────────────────
+  if (authState === 'checking') {
+    return (
+      <div className="min-h-screen bg-[#f4f7fb] flex items-center justify-center px-5">
+        <div className="text-center">
+          <div className="w-10 h-10 border-4 border-[#2563eb] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-[#64748b] text-[15px]">Verifying your link…</p>
+        </div>
+      </div>
+    )
+  }
+
+  // ── Invalid / expired token ────────────────────────────────────────────────
+  if (authState === 'invalid') {
+    return (
+      <div className="min-h-screen bg-[#f4f7fb] flex items-center justify-center px-5">
+        <div className="bg-white p-10 rounded-[18px] shadow-[0_10px_35px_rgba(15,23,42,0.08)] text-center max-w-md w-full">
+          <div className="text-5xl mb-4">🔒</div>
+          <h2 className="text-2xl font-bold text-[#0f172a] mb-3">Link not valid</h2>
+          <p className="text-[#64748b] text-[15px] leading-relaxed mb-6">
+            This link has expired or is invalid. Go back and enter your email again to get a new one.
+          </p>
+          <a
+            href="/"
+            className="inline-block bg-[#2563eb] text-white font-bold text-[15px] px-6 py-3 rounded-[10px] no-underline"
+          >
+            ← Get a new link
+          </a>
+        </div>
+      </div>
+    )
+  }
+
+  // ── Success ────────────────────────────────────────────────────────────────
   if (status === 'success') {
     return (
       <div className="min-h-screen bg-[#f4f7fb] flex items-center justify-center px-5">
@@ -74,6 +133,7 @@ export default function SignupPage() {
 
   const isLoading = status === 'loading'
 
+  // ── Form (token valid) ─────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-[#f4f7fb] flex items-center justify-center px-5 py-12">
       <div className="bg-white p-8 rounded-[18px] shadow-[0_10px_35px_rgba(15,23,42,0.08)] w-full max-w-lg">
@@ -82,6 +142,11 @@ export default function SignupPage() {
         <p className="text-[#64748b] text-[15px] mb-6">
           Tell us a bit more so we can find the right people for you.
         </p>
+
+        {/* Locked email */}
+        <div className="mb-5 px-4 py-3 bg-[#f1f5f9] rounded-[10px] text-[14px] text-[#475569]">
+          Signing up as <strong className="text-[#0f172a]">{tokenEmail}</strong>
+        </div>
 
         <form onSubmit={handleSubmit} noValidate>
 
@@ -101,14 +166,6 @@ export default function SignupPage() {
             </div>
           </div>
 
-          {/* Email */}
-          <div className="mb-3">
-            <label className="block mb-1 text-[13px] font-bold text-[#374151]">Email Address *</label>
-            <input name="email" type="email" placeholder="you@example.com" required
-              value={form.email} onChange={handleChange} disabled={isLoading}
-              className={inputClass} />
-          </div>
-
           {/* School */}
           <div className="mb-3">
             <label className="block mb-1 text-[13px] font-bold text-[#374151]">School Name</label>
@@ -118,7 +175,7 @@ export default function SignupPage() {
           </div>
 
           {/* City + Year row */}
-          <div className="grid grid-cols-2 gap-3 mb-3 max-[480px]:grid-cols-1">
+          <div className="grid grid-cols-2 gap-3 mb-5 max-[480px]:grid-cols-1">
             <div>
               <label className="block mb-1 text-[13px] font-bold text-[#374151]">City You Lived In</label>
               <input name="cityName" type="text" placeholder="e.g. Chicago"
@@ -133,14 +190,6 @@ export default function SignupPage() {
             </div>
           </div>
 
-          {/* Password */}
-          <div className="mb-5">
-            <label className="block mb-1 text-[13px] font-bold text-[#374151]">Create a Password *</label>
-            <input name="password" type="password" placeholder="Min 8 characters" required
-              minLength={8} value={form.password} onChange={handleChange} disabled={isLoading}
-              className={inputClass} />
-          </div>
-
           {status === 'error' && (
             <p className="mb-4 text-[13px] text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
               {errorMsg}
@@ -152,7 +201,7 @@ export default function SignupPage() {
             disabled={isLoading}
             className="w-full bg-[#2563eb] hover:bg-[#1d4ed8] disabled:bg-[#93c5fd] text-white font-bold text-[17px] py-[15px] rounded-[10px] cursor-pointer disabled:cursor-not-allowed border-0 transition-colors duration-200"
           >
-            {isLoading ? 'Creating your profile...' : 'Join the Community'}
+            {isLoading ? 'Saving your profile…' : 'Join the Community'}
           </button>
 
           <p className="mt-3 text-[12px] text-[#94a3b8] text-center">

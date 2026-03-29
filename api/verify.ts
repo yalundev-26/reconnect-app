@@ -1,8 +1,24 @@
-import { createHmac } from 'node:crypto'
-
 // ── Token (inlined — no cross-file imports) ───────────────────────────────────
 
-function verifyToken(token: string): { valid: boolean; email?: string } {
+function fromBase64url(str: string): string {
+  return atob(str.replace(/-/g, '+').replace(/_/g, '/'))
+}
+
+async function hmacSha256Base64url(secret: string, message: string): Promise<string> {
+  const enc    = new TextEncoder()
+  const key    = await crypto.subtle.importKey(
+    'raw', enc.encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false, ['sign'],
+  )
+  const rawSig = await crypto.subtle.sign('HMAC', key, enc.encode(message))
+  const bytes  = new Uint8Array(rawSig)
+  let binary   = ''
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i])
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
+}
+
+async function verifyToken(token: string): Promise<{ valid: boolean; email?: string }> {
   try {
     const secret   = process.env.TOKEN_SECRET ?? 'dev-secret'
     const lastDot  = token.lastIndexOf('.')
@@ -10,10 +26,10 @@ function verifyToken(token: string): { valid: boolean; email?: string } {
 
     const payload  = token.slice(0, lastDot)
     const sig      = token.slice(lastDot + 1)
-    const expected = createHmac('sha256', secret).update(payload).digest('base64url')
+    const expected = await hmacSha256Base64url(secret, payload)
     if (sig !== expected) return { valid: false }
 
-    const { email, ts } = JSON.parse(Buffer.from(payload, 'base64url').toString())
+    const { email, ts } = JSON.parse(fromBase64url(payload))
     if (typeof email !== 'string' || typeof ts !== 'number') return { valid: false }
     if (Date.now() - ts > 48 * 60 * 60 * 1000) return { valid: false }
 
@@ -25,14 +41,16 @@ function verifyToken(token: string): { valid: boolean; email?: string } {
 
 // ── Handler ───────────────────────────────────────────────────────────────────
 
-export function GET(req: Request): Response {
+export async function GET(req: Request): Promise<Response> {
   const url   = new URL(req.url)
   const token = url.searchParams.get('token') ?? ''
 
-  const result = verifyToken(token)
+  const result = await verifyToken(token)
   if (!result.valid) {
     return Response.json({ valid: false }, { status: 401 })
   }
 
   return Response.json({ valid: true, email: result.email })
 }
+
+export const config = { runtime: 'edge' }

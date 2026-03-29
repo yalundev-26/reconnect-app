@@ -96,3 +96,5 @@ export default async function handler(req: Request): Promise<Response> {
 
   return new Response('ok')
 }
+
+export const config = { runtime: 'edge' }

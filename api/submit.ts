@@ -1,15 +1,31 @@
-import { createHmac } from 'node:crypto'
-
 const BREVO_CONTACTS_URL      = 'https://api.brevo.com/v3/contacts'
 const BREVO_TRANSACTIONAL_URL = 'https://api.brevo.com/v3/smtp/email'
 
 // ── Token (inlined — no cross-file imports) ───────────────────────────────────
 
-function generateToken(email: string): string {
+function toBase64url(str: string): string {
+  return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
+}
+
+async function hmacSha256Base64url(secret: string, message: string): Promise<string> {
+  const enc    = new TextEncoder()
+  const key    = await crypto.subtle.importKey(
+    'raw', enc.encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false, ['sign'],
+  )
+  const rawSig = await crypto.subtle.sign('HMAC', key, enc.encode(message))
+  const bytes  = new Uint8Array(rawSig)
+  let binary   = ''
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i])
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
+}
+
+async function generateToken(email: string): Promise<string> {
   const secret  = process.env.TOKEN_SECRET ?? 'dev-secret'
   const ts      = Date.now()
-  const payload = Buffer.from(JSON.stringify({ email, ts })).toString('base64url')
-  const sig     = createHmac('sha256', secret).update(payload).digest('base64url')
+  const payload = toBase64url(JSON.stringify({ email, ts }))
+  const sig     = await hmacSha256Base64url(secret, payload)
   return `${payload}.${sig}`
 }
 
@@ -135,11 +151,13 @@ export default async function handler(req: Request): Promise<Response> {
   }
 
   try {
-    await addToBrevo(email, source)
-
-    const token   = generateToken(email)
     const baseUrl = getBaseUrl(req)
-    await sendAccessEmail(email, token, baseUrl)
+    const token   = await generateToken(email)
+
+    await Promise.all([
+      addToBrevo(email, source),
+      sendAccessEmail(email, token, baseUrl),
+    ])
 
     notifyTelegram(email, source).catch(() => { /* ignore */ })
 
@@ -149,3 +167,5 @@ export default async function handler(req: Request): Promise<Response> {
     return Response.json({ error: message }, { status: 500 })
   }
 }
+
+export const config = { runtime: 'edge' }

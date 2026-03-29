@@ -4,7 +4,7 @@
 
 import { verifyToken } from './_token.js'
 
-export function GET(req: Request): Response {
+export default function handler(req: Request): Response {
   const url   = new URL(req.url)
   const token = url.searchParams.get('token') ?? ''
 

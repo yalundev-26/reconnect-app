@@ -16,20 +16,28 @@ async function submitLead(email: string): Promise<void> {
 
   // In production (Vercel), use the serverless function which also
   // notifies the Telegram group.
-  const res = await fetch('/api/submit', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, source: 'meta_web' }),
-  })
+  const ctrl    = new AbortController()
+  const timeout = setTimeout(() => ctrl.abort(), 12000) // 12s — never hang forever
 
-  let data: { error?: string } = {}
   try {
-    data = await res.json()
-  } catch {
-    throw new Error(`Server error (${res.status})`)
-  }
+    const res = await fetch('/api/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, source: 'meta_web' }),
+      signal: ctrl.signal,
+    })
 
-  if (!res.ok) throw new Error(data?.error ?? 'Submission failed.')
+    let data: { error?: string } = {}
+    try { data = await res.json() } catch { /* ignore parse errors */ }
+    if (!res.ok) throw new Error(data?.error ?? 'Submission failed.')
+  } catch (err) {
+    if (err instanceof Error && err.name === 'AbortError') {
+      throw new Error('Request timed out. Please try again.')
+    }
+    throw err
+  } finally {
+    clearTimeout(timeout)
+  }
 }
 
 export default function SearchForm() {

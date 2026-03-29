@@ -1,4 +1,4 @@
-import { useState, useEffect, type ChangeEvent } from 'react'
+import { useState, type ChangeEvent } from 'react'
 
 interface ProfileForm {
   firstName:  string
@@ -16,41 +16,35 @@ const initial: ProfileForm = {
   year:       '',
 }
 
-type AuthState = 'checking' | 'valid' | 'invalid'
-type Status    = 'idle' | 'loading' | 'success' | 'error'
+type Status = 'idle' | 'loading' | 'success' | 'error'
 
 const inputClass =
   'w-full px-4 py-3.5 border border-[#cbd5e1] rounded-[10px] text-[15px] outline-none focus:border-[#2563eb] transition-colors disabled:opacity-50'
 
+// Decode email from token payload without an API call.
+// The token is: base64url(JSON({email,ts})).hmac
+// We only read the payload — the server verifies the HMAC on submit.
+function emailFromToken(token: string): string | null {
+  try {
+    const lastDot = token.lastIndexOf('.')
+    if (lastDot === -1) return null
+    const payload = token.slice(0, lastDot)
+    const b64     = payload.replace(/-/g, '+').replace(/_/g, '/')
+    const { email } = JSON.parse(atob(b64))
+    return typeof email === 'string' && email.includes('@') ? email : null
+  } catch {
+    return null
+  }
+}
+
 export default function SignupPage() {
-  const [authState, setAuthState] = useState<AuthState>('checking')
-  const [tokenEmail, setTokenEmail] = useState('')
-  const [form, setForm]   = useState<ProfileForm>(initial)
+  const params     = new URLSearchParams(window.location.search)
+  const token      = params.get('token') ?? ''
+  const tokenEmail = emailFromToken(token) ?? ''
+
+  const [form, setForm]       = useState<ProfileForm>(initial)
   const [status, setStatus]   = useState<Status>('idle')
   const [errorMsg, setErrorMsg] = useState('')
-
-  // ── Validate token from URL on mount ──────────────────────────────────────
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    const token  = params.get('token')
-
-    if (!token) {
-      setAuthState('invalid')
-      return
-    }
-
-    fetch(`/api/verify?token=${encodeURIComponent(token)}`)
-      .then(r => r.json())
-      .then((data: { valid: boolean; email?: string }) => {
-        if (data.valid && data.email) {
-          setTokenEmail(data.email)
-          setAuthState('valid')
-        } else {
-          setAuthState('invalid')
-        }
-      })
-      .catch(() => setAuthState('invalid'))
-  }, [])
 
   function handleChange(e: ChangeEvent<HTMLInputElement>) {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
@@ -82,20 +76,8 @@ export default function SignupPage() {
     }
   }
 
-  // ── Checking token ─────────────────────────────────────────────────────────
-  if (authState === 'checking') {
-    return (
-      <div className="min-h-screen bg-[#f4f7fb] flex items-center justify-center px-5">
-        <div className="text-center">
-          <div className="w-10 h-10 border-4 border-[#2563eb] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-[#64748b] text-[15px]">Verifying your link…</p>
-        </div>
-      </div>
-    )
-  }
-
-  // ── Invalid / expired token ────────────────────────────────────────────────
-  if (authState === 'invalid') {
+  // ── Invalid / no token in URL ─────────────────────────────────────────────
+  if (!tokenEmail) {
     return (
       <div className="min-h-screen bg-[#f4f7fb] flex items-center justify-center px-5">
         <div className="bg-white p-10 rounded-[18px] shadow-[0_10px_35px_rgba(15,23,42,0.08)] text-center max-w-md w-full">

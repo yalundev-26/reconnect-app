@@ -1,29 +1,51 @@
 import { useState, type ChangeEvent } from 'react'
 
 interface ProfileForm {
-  firstName:  string
-  lastName:   string
-  schoolName: string
-  cityName:   string
-  year:       string
+  firstName:       string
+  lastName:        string
+  schoolName:      string
+  cityName:        string
+  yearFrom:        string
+  yearTo:          string
+  password:        string
+  confirmPassword: string
+  communityPrefs:  string[]
 }
 
 const initial: ProfileForm = {
-  firstName:  '',
-  lastName:   '',
-  schoolName: '',
-  cityName:   '',
-  year:       '',
+  firstName:       '',
+  lastName:        '',
+  schoolName:      '',
+  cityName:        '',
+  yearFrom:        '',
+  yearTo:          '',
+  password:        '',
+  confirmPassword: '',
+  communityPrefs:  [],
 }
+
+const COMMUNITY_OPTIONS = [
+  { value: 'classmates',   label: 'School Classmates' },
+  { value: 'hometown',     label: 'Hometown & City' },
+  { value: 'neighborhood', label: 'Old Neighborhood' },
+  { value: 'childhood',    label: 'Childhood Friends' },
+  { value: 'sports',       label: 'Sports Teams' },
+  { value: 'cultural',     label: 'Cultural Groups' },
+]
+
+const YEARS = Array.from({ length: 2026 - 1960 + 1 }, (_, i) => String(2026 - i))
 
 type Status = 'idle' | 'loading' | 'success' | 'error'
 
 const inputClass =
-  'w-full px-4 py-3.5 border border-[#cbd5e1] rounded-[10px] text-[15px] outline-none focus:border-[#2563eb] transition-colors disabled:opacity-50'
+  'w-full px-4 py-3.5 border border-[#cbd5e1] rounded-[10px] text-[15px] outline-none focus:border-[#2563eb] transition-colors disabled:opacity-50 bg-white'
 
-// Decode email from token payload without an API call.
-// The token is: base64url(JSON({email,ts})).hmac
-// We only read the payload — the server verifies the HMAC on submit.
+const selectClass =
+  'w-full px-4 py-3.5 border border-[#cbd5e1] rounded-[10px] text-[15px] outline-none focus:border-[#2563eb] transition-colors disabled:opacity-50 bg-white'
+
+const labelClass = 'block mb-1 text-[13px] font-bold text-[#374151]'
+const sectionHeadClass = 'text-[11px] font-bold uppercase tracking-widest text-[#94a3b8] mb-3 mt-1'
+
 function emailFromToken(token: string): string | null {
   try {
     const lastDot = token.lastIndexOf('.')
@@ -42,26 +64,58 @@ export default function SignupPage() {
   const token      = params.get('token') ?? ''
   const tokenEmail = emailFromToken(token) ?? ''
 
-  const [form, setForm]       = useState<ProfileForm>(initial)
-  const [status, setStatus]   = useState<Status>('idle')
-  const [errorMsg, setErrorMsg] = useState('')
+  const [form, setForm]           = useState<ProfileForm>(initial)
+  const [status, setStatus]       = useState<Status>('idle')
+  const [errorMsg, setErrorMsg]   = useState('')
+  const [showPwd, setShowPwd]     = useState(false)
+  const [showConf, setShowConf]   = useState(false)
 
-  function handleChange(e: ChangeEvent<HTMLInputElement>) {
+  function handleChange(e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
+  }
+
+  function togglePref(value: string) {
+    setForm(prev => ({
+      ...prev,
+      communityPrefs: prev.communityPrefs.includes(value)
+        ? prev.communityPrefs.filter(v => v !== value)
+        : [...prev.communityPrefs, value],
+    }))
   }
 
   async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault()
-    setStatus('loading')
     setErrorMsg('')
 
-    const token = new URLSearchParams(window.location.search).get('token') ?? ''
+    if (form.password.length < 8) {
+      setErrorMsg('Password must be at least 8 characters.')
+      setStatus('error')
+      return
+    }
+    if (form.password !== form.confirmPassword) {
+      setErrorMsg('Passwords do not match.')
+      setStatus('error')
+      return
+    }
+
+    setStatus('loading')
+    const currentToken = new URLSearchParams(window.location.search).get('token') ?? ''
 
     try {
       const res = await fetch('/api/profile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, ...form }),
+        body: JSON.stringify({
+          token: currentToken,
+          firstName:      form.firstName,
+          lastName:       form.lastName,
+          schoolName:     form.schoolName,
+          cityName:       form.cityName,
+          yearFrom:       form.yearFrom,
+          yearTo:         form.yearTo,
+          password:       form.password,
+          communityPrefs: form.communityPrefs.join(','),
+        }),
       })
 
       let data: { error?: string } = {}
@@ -86,10 +140,7 @@ export default function SignupPage() {
           <p className="text-[#64748b] text-[15px] leading-relaxed mb-6">
             This link has expired or is invalid. Go back and enter your email again to get a new one.
           </p>
-          <a
-            href="/"
-            className="inline-block bg-[#2563eb] text-white font-bold text-[15px] px-6 py-3 rounded-[10px] no-underline"
-          >
+          <a href="/" className="inline-block bg-[#2563eb] text-white font-bold text-[15px] px-6 py-3 rounded-[10px] no-underline">
             ← Get a new link
           </a>
         </div>
@@ -126,22 +177,25 @@ export default function SignupPage() {
         </p>
 
         {/* Locked email */}
-        <div className="mb-5 px-4 py-3 bg-[#f1f5f9] rounded-[10px] text-[14px] text-[#475569]">
+        <div className="mb-6 px-4 py-3 bg-[#f1f5f9] rounded-[10px] text-[14px] text-[#475569]">
           Signing up as <strong className="text-[#0f172a]">{tokenEmail}</strong>
         </div>
 
         <form onSubmit={handleSubmit} noValidate>
 
+          {/* ─── Personal Info ─────────────────────────────────────────── */}
+          <p className={sectionHeadClass}>Personal Info</p>
+
           {/* Name row */}
           <div className="grid grid-cols-2 gap-3 mb-3 max-[480px]:grid-cols-1">
             <div>
-              <label className="block mb-1 text-[13px] font-bold text-[#374151]">First Name *</label>
+              <label className={labelClass}>First Name *</label>
               <input name="firstName" type="text" placeholder="First name" required
                 value={form.firstName} onChange={handleChange} disabled={isLoading}
                 className={inputClass} />
             </div>
             <div>
-              <label className="block mb-1 text-[13px] font-bold text-[#374151]">Last Name *</label>
+              <label className={labelClass}>Last Name *</label>
               <input name="lastName" type="text" placeholder="Last name" required
                 value={form.lastName} onChange={handleChange} disabled={isLoading}
                 className={inputClass} />
@@ -150,28 +204,102 @@ export default function SignupPage() {
 
           {/* School */}
           <div className="mb-3">
-            <label className="block mb-1 text-[13px] font-bold text-[#374151]">School Name</label>
+            <label className={labelClass}>School Name</label>
             <input name="schoolName" type="text" placeholder="e.g. Lincoln High School"
               value={form.schoolName} onChange={handleChange} disabled={isLoading}
               className={inputClass} />
           </div>
 
-          {/* City + Year row */}
-          <div className="grid grid-cols-2 gap-3 mb-5 max-[480px]:grid-cols-1">
+          {/* City */}
+          <div className="mb-3">
+            <label className={labelClass}>City You Lived In</label>
+            <input name="cityName" type="text" placeholder="e.g. Chicago"
+              value={form.cityName} onChange={handleChange} disabled={isLoading}
+              className={inputClass} />
+          </div>
+
+          {/* Year range */}
+          <div className="grid grid-cols-2 gap-3 mb-6 max-[480px]:grid-cols-1">
             <div>
-              <label className="block mb-1 text-[13px] font-bold text-[#374151]">City You Lived In</label>
-              <input name="cityName" type="text" placeholder="e.g. Chicago"
-                value={form.cityName} onChange={handleChange} disabled={isLoading}
-                className={inputClass} />
+              <label className={labelClass}>Year From</label>
+              <select name="yearFrom" value={form.yearFrom} onChange={handleChange}
+                disabled={isLoading} className={selectClass}>
+                <option value="">Select year</option>
+                {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
+              </select>
             </div>
             <div>
-              <label className="block mb-1 text-[13px] font-bold text-[#374151]">Graduation / Year Range</label>
-              <input name="year" type="text" placeholder="e.g. 1995–2000"
-                value={form.year} onChange={handleChange} disabled={isLoading}
-                className={inputClass} />
+              <label className={labelClass}>Year To</label>
+              <select name="yearTo" value={form.yearTo} onChange={handleChange}
+                disabled={isLoading} className={selectClass}>
+                <option value="">Select year</option>
+                {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
+              </select>
             </div>
           </div>
 
+          {/* ─── Password ──────────────────────────────────────────────── */}
+          <p className={sectionHeadClass}>Set a Password</p>
+
+          <div className="mb-3 relative">
+            <label className={labelClass}>Password *</label>
+            <input name="password" type={showPwd ? 'text' : 'password'}
+              placeholder="Min. 8 characters" required minLength={8}
+              value={form.password} onChange={handleChange} disabled={isLoading}
+              className={inputClass + ' pr-20'} />
+            <button type="button" tabIndex={-1}
+              onClick={() => setShowPwd(v => !v)}
+              className="absolute right-3 top-[38px] text-[12px] font-semibold text-[#2563eb] cursor-pointer bg-transparent border-0 p-0">
+              {showPwd ? 'Hide' : 'Show'}
+            </button>
+          </div>
+
+          <div className="mb-6 relative">
+            <label className={labelClass}>Confirm Password *</label>
+            <input name="confirmPassword" type={showConf ? 'text' : 'password'}
+              placeholder="Repeat your password" required
+              value={form.confirmPassword} onChange={handleChange} disabled={isLoading}
+              className={inputClass + ' pr-20'} />
+            <button type="button" tabIndex={-1}
+              onClick={() => setShowConf(v => !v)}
+              className="absolute right-3 top-[38px] text-[12px] font-semibold text-[#2563eb] cursor-pointer bg-transparent border-0 p-0">
+              {showConf ? 'Hide' : 'Show'}
+            </button>
+          </div>
+
+          {/* ─── Community Preferences ─────────────────────────────────── */}
+          <p className={sectionHeadClass}>Community Preferences</p>
+          <p className="text-[13px] text-[#64748b] mb-3">Who are you hoping to reconnect with?</p>
+
+          <div className="grid grid-cols-2 gap-2 mb-6 max-[480px]:grid-cols-1">
+            {COMMUNITY_OPTIONS.map(opt => {
+              const checked = form.communityPrefs.includes(opt.value)
+              return (
+                <label key={opt.value}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-[10px] border cursor-pointer transition-colors select-none text-[14px] font-medium
+                    ${checked
+                      ? 'border-[#2563eb] bg-[#eff6ff] text-[#1d4ed8]'
+                      : 'border-[#e2e8f0] bg-white text-[#374151] hover:border-[#94a3b8]'
+                    } ${isLoading ? 'opacity-50 pointer-events-none' : ''}`}>
+                  <input type="checkbox" className="sr-only"
+                    checked={checked}
+                    onChange={() => togglePref(opt.value)}
+                    disabled={isLoading} />
+                  <span className={`w-4 h-4 rounded border flex items-center justify-center shrink-0
+                    ${checked ? 'bg-[#2563eb] border-[#2563eb]' : 'border-[#cbd5e1]'}`}>
+                    {checked && (
+                      <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                        <path d="M1 4l2.5 2.5L9 1" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    )}
+                  </span>
+                  {opt.label}
+                </label>
+              )
+            })}
+          </div>
+
+          {/* Error */}
           {status === 'error' && (
             <p className="mb-4 text-[13px] text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
               {errorMsg}

@@ -1,12 +1,15 @@
 const BREVO_CONTACTS_URL = 'https://api.brevo.com/v3/contacts'
 
 interface ProfileBody {
-  token:      string
-  firstName:  string
-  lastName:   string
-  schoolName: string
-  cityName:   string
-  year:       string
+  token:          string
+  firstName:      string
+  lastName:       string
+  schoolName:     string
+  cityName:       string
+  yearFrom:       string
+  yearTo:         string
+  password:       string
+  communityPrefs: string
 }
 
 // ── Token (inlined — no cross-file imports) ───────────────────────────────────
@@ -50,6 +53,23 @@ async function verifyToken(token: string): Promise<{ valid: boolean; email?: str
   }
 }
 
+// ── Password hash (PBKDF2-SHA-256 via Web Crypto) ────────────────────────────
+
+async function hashPassword(password: string, email: string): Promise<string> {
+  const enc         = new TextEncoder()
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw', enc.encode(password), 'PBKDF2', false, ['deriveBits'],
+  )
+  const bits  = await crypto.subtle.deriveBits(
+    { name: 'PBKDF2', salt: enc.encode(email), iterations: 100_000, hash: 'SHA-256' },
+    keyMaterial, 256,
+  )
+  const bytes = new Uint8Array(bits)
+  let binary  = ''
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i])
+  return btoa(binary)
+}
+
 // ── Fetch with timeout ────────────────────────────────────────────────────────
 
 function fetchT(url: string, opts: RequestInit, ms = 8000): Promise<Response> {
@@ -60,7 +80,11 @@ function fetchT(url: string, opts: RequestInit, ms = 8000): Promise<Response> {
 
 // ── Brevo: update full profile ────────────────────────────────────────────────
 
-async function updateBrevoProfile(email: string, data: Omit<ProfileBody, 'token'>): Promise<void> {
+async function updateBrevoProfile(
+  email: string,
+  data: Omit<ProfileBody, 'token'>,
+  passwordHash: string,
+): Promise<void> {
   const apiKey = process.env.BREVO_API_KEY
   const listId = Number(process.env.BREVO_LIST_ID)
   if (!apiKey || !listId) throw new Error('Brevo not configured on server.')
@@ -71,12 +95,15 @@ async function updateBrevoProfile(email: string, data: Omit<ProfileBody, 'token'
     body: JSON.stringify({
       email,
       attributes: {
-        FIRSTNAME: data.firstName,
-        LASTNAME:  data.lastName,
-        SCHOOL:    data.schoolName,
-        CITY:      data.cityName,
-        YEAR:      data.year,
-        SOURCE:    'meta_web',
+        FIRSTNAME:       data.firstName,
+        LASTNAME:        data.lastName,
+        SCHOOL:          data.schoolName,
+        CITY:            data.cityName,
+        YEAR_FROM:       data.yearFrom,
+        YEAR_TO:         data.yearTo,
+        COMMUNITY_PREFS: data.communityPrefs,
+        PASSWORD_HASH:   passwordHash,
+        SOURCE:          'meta_web',
       },
       listIds: [listId],
       updateEnabled: true,
@@ -96,14 +123,16 @@ async function notifyTelegram(email: string, data: Omit<ProfileBody, 'token'>): 
   const groupId  = process.env.TELEGRAM_GROUP_ID
   if (!botToken || !groupId) return
 
-  const e = (v: string) => v || '—'
+  const e   = (v: string) => v || '—'
+  const yr  = [data.yearFrom, data.yearTo].filter(Boolean).join('–') || '—'
   const text =
     `📋 <b>New Profile Completed!</b>\n\n` +
     `📧 Email: <code>${email}</code>\n` +
     `👤 Name: ${e(data.firstName)} ${e(data.lastName)}\n` +
     `🏫 School: ${e(data.schoolName)}\n` +
     `🏙️ City: ${e(data.cityName)}\n` +
-    `📅 Year: ${e(data.year)}`
+    `📅 Year range: ${yr}\n` +
+    `🤝 Prefs: ${e(data.communityPrefs)}`
 
   await fetchT(
     `https://api.telegram.org/bot${botToken}/sendMessage`,
@@ -120,10 +149,23 @@ export async function POST(req: Request): Promise<Response> {
   try { body = await req.json() }
   catch { return new Response('Invalid JSON', { status: 400 }) }
 
-  const { token, firstName = '', lastName = '', schoolName = '', cityName = '', year = '' } = body
+  const {
+    token,
+    firstName      = '',
+    lastName       = '',
+    schoolName     = '',
+    cityName       = '',
+    yearFrom       = '',
+    yearTo         = '',
+    password       = '',
+    communityPrefs = '',
+  } = body
 
   if (!token) {
     return Response.json({ error: 'Missing token.' }, { status: 400 })
+  }
+  if (!password || password.length < 8) {
+    return Response.json({ error: 'Password must be at least 8 characters.' }, { status: 422 })
   }
 
   const result = await verifyToken(token)
@@ -134,11 +176,15 @@ export async function POST(req: Request): Promise<Response> {
     )
   }
 
-  const email = result.email!
+  const email        = result.email!
+  const passwordHash = await hashPassword(password, email)
+  const profileData  = { firstName, lastName, schoolName, cityName, yearFrom, yearTo, password, communityPrefs }
 
   try {
-    await updateBrevoProfile(email, { firstName, lastName, schoolName, cityName, year })
-    notifyTelegram(email, { firstName, lastName, schoolName, cityName, year }).catch(() => { /* ignore */ })
+    await updateBrevoProfile(email, profileData, passwordHash)
+    notifyTelegram(email, profileData).catch((err) => {
+      console.error('[Telegram] notifyTelegram failed:', err?.message ?? err)
+    })
     return Response.json({ ok: true })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Submission failed.'

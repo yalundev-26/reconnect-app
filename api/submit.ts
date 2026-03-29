@@ -83,26 +83,189 @@ async function sendAccessEmail(email: string, token: string, baseUrl: string): P
     body: JSON.stringify({
       sender: { name: senderName, email: senderEmail },
       to: [{ email }],
-      subject: 'Your private access link 🔑',
-      htmlContent: `
-        <div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto;padding:32px 24px;background:#f4f7fb">
-          <div style="background:#fff;border-radius:16px;padding:40px;box-shadow:0 4px 24px rgba(15,23,42,0.08)">
-            <h2 style="margin:0 0 8px;font-size:22px;color:#0f172a">You're one step away 🎉</h2>
-            <p style="color:#64748b;margin:0 0 28px;font-size:15px">
-              Click the button below to complete your profile and join the community.
-              This link is private — it only works for <strong>${email}</strong> and expires in 48 hours.
-            </p>
-            <a href="${link}"
-               style="display:inline-block;background:#2563eb;color:#fff;font-weight:700;font-size:16px;
-                      padding:14px 28px;border-radius:10px;text-decoration:none">
-              Complete My Profile →
-            </a>
-            <p style="color:#94a3b8;margin:28px 0 0;font-size:12px">
-              If you didn't request this, you can safely ignore this email.
-            </p>
-          </div>
-        </div>
-      `,
+      subject: 'Hey — your access link is ready!',
+      headers: { 'List-Unsubscribe': `<mailto:${senderEmail}?subject=unsubscribe>` },
+      htmlContent: `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Your access link is ready</title>
+</head>
+<body style="margin:0;padding:0;background:#f0f4f8;font-family:Arial,Helvetica,sans-serif">
+
+  <!--[if mso]><table width="600" align="center" cellpadding="0" cellspacing="0"><tr><td><![endif]-->
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr>
+      <td align="center" style="padding:32px 16px">
+
+        <!-- Card -->
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0"
+               style="max-width:600px;width:100%;background:#ffffff;border-radius:16px;
+                      overflow:hidden;box-shadow:0 4px 24px rgba(15,23,42,0.08)">
+
+          <!-- Logo header -->
+          <tr>
+            <td align="center" style="padding:36px 40px 24px">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="background:#0f172a;border-radius:14px;padding:12px 20px">
+                    <span style="font-size:22px;font-weight:900;color:#ffffff;
+                                 letter-spacing:-0.5px;font-family:Arial,sans-serif">
+                      SyiyQ
+                    </span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Headline -->
+          <tr>
+            <td align="center" style="padding:0 40px 8px">
+              <h1 style="margin:0;font-size:26px;font-weight:800;color:#0f172a;line-height:1.3;
+                         font-family:Arial,sans-serif">
+                Hey, your access link<br/>is ready!
+              </h1>
+            </td>
+          </tr>
+
+          <!-- Sub-copy -->
+          <tr>
+            <td align="center" style="padding:12px 48px 28px">
+              <p style="margin:0;font-size:15px;color:#64748b;line-height:1.6;text-align:center">
+                Hi! Thanks for joining.<br/>
+                We're ready to help you reconnect with people from your school,
+                hometown, and past community.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Feature banner -->
+          <tr>
+            <td style="padding:0 40px 32px">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+                     style="background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%);
+                            border-radius:14px;overflow:hidden">
+                <tr>
+                  <td style="padding:32px 28px 24px">
+                    <p style="margin:0 0 6px;font-size:12px;font-weight:700;color:#7dd3fc;
+                               letter-spacing:1.5px;text-transform:uppercase;font-family:Arial,sans-serif">
+                      Welcome to SyiyQ
+                    </p>
+                    <h2 style="margin:0 0 24px;font-size:24px;font-weight:800;color:#ffffff;
+                               line-height:1.25;font-family:Arial,sans-serif">
+                      Your link access<br/>is ready
+                    </h2>
+
+                    <!-- 3 features -->
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <!-- Feature 1 -->
+                        <td width="32%" valign="top"
+                            style="background:rgba(255,255,255,0.08);border-radius:10px;
+                                   padding:14px 10px;text-align:center">
+                          <div style="font-size:18px;margin-bottom:6px">&#10003;</div>
+                          <p style="margin:0;font-size:12px;color:#e2e8f0;line-height:1.4;
+                                    font-family:Arial,sans-serif">
+                            Reconnect with classmates &amp; childhood friends
+                          </p>
+                        </td>
+                        <td width="2%"></td>
+                        <!-- Feature 2 -->
+                        <td width="32%" valign="top"
+                            style="background:rgba(255,255,255,0.08);border-radius:10px;
+                                   padding:14px 10px;text-align:center">
+                          <div style="font-size:18px;margin-bottom:6px">&#10003;</div>
+                          <p style="margin:0;font-size:12px;color:#e2e8f0;line-height:1.4;
+                                    font-family:Arial,sans-serif">
+                            Find people from your old city or neighborhood
+                          </p>
+                        </td>
+                        <td width="2%"></td>
+                        <!-- Feature 3 -->
+                        <td width="32%" valign="top"
+                            style="background:rgba(255,255,255,0.08);border-radius:10px;
+                                   padding:14px 10px;text-align:center">
+                          <div style="font-size:18px;margin-bottom:6px">&#10003;</div>
+                          <p style="margin:0;font-size:12px;color:#e2e8f0;line-height:1.4;
+                                    font-family:Arial,sans-serif">
+                            Join a community built around shared memories
+                          </p>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- CTA button -->
+          <tr>
+            <td align="center" style="padding:0 40px 16px">
+              <a href="${link}"
+                 style="display:inline-block;background:#2563eb;color:#ffffff;
+                        font-weight:700;font-size:16px;padding:16px 36px;
+                        border-radius:10px;text-decoration:none;
+                        font-family:Arial,sans-serif;letter-spacing:0.2px">
+                Complete My Profile &#8594;
+              </a>
+            </td>
+          </tr>
+
+          <!-- Fallback link -->
+          <tr>
+            <td align="center" style="padding:16px 48px 8px">
+              <p style="margin:0;font-size:13px;color:#94a3b8;text-align:center;line-height:1.6">
+                If the button doesn't work, copy and paste this link into your browser:
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td align="center" style="padding:4px 48px 28px">
+              <a href="${link}"
+                 style="font-size:12px;color:#2563eb;word-break:break-all;text-decoration:underline">
+                ${link}
+              </a>
+            </td>
+          </tr>
+
+          <!-- Community note -->
+          <tr>
+            <td style="padding:0 40px 28px;border-top:1px solid #f1f5f9">
+              <p style="margin:20px 0 0;font-size:13px;color:#64748b;line-height:1.7">
+                We're excited to have you join our community. You can expect exclusive updates
+                and announcements about our activity.<br/><br/>
+                This link is private — it only works for <strong>${email}</strong>
+                and expires in <strong>48 hours</strong>.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td align="center"
+                style="background:#f8fafc;padding:20px 40px;border-top:1px solid #e2e8f0">
+              <p style="margin:0;font-size:12px;color:#94a3b8;line-height:1.6;text-align:center">
+                &copy; 2026 SyiyQ. All rights reserved.<br/>
+                If you didn't request this email, you can safely ignore it.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+        <!-- / Card -->
+
+      </td>
+    </tr>
+  </table>
+
+  <!--[if mso]></td></tr></table><![endif]-->
+
+</body>
+</html>`,
     }),
   })
 
@@ -159,7 +322,9 @@ export default async function handler(req: Request): Promise<Response> {
       sendAccessEmail(email, token, baseUrl),
     ])
 
-    notifyTelegram(email, source).catch(() => { /* ignore */ })
+    notifyTelegram(email, source).catch((err) => {
+      console.error('[Telegram] notifyTelegram failed:', err?.message ?? err)
+    })
 
     return Response.json({ ok: true })
   } catch (err) {

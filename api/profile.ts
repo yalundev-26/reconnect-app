@@ -3,7 +3,7 @@
 // 2. Updates Brevo contact with full profile data
 // 3. Notifies Telegram group with all submitted data
 
-import { verifyToken } from './_token'
+import { verifyToken } from './_token.js'
 
 const BREVO_CONTACTS_URL = 'https://api.brevo.com/v3/contacts'
 

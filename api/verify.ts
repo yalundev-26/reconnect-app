@@ -2,7 +2,7 @@
 // GET /api/verify?token=xxx
 // Returns { valid: true, email } or { valid: false }
 
-import { verifyToken } from './_token'
+import { verifyToken } from './_token.js'
 
 export function GET(req: Request): Response {
   const url   = new URL(req.url)

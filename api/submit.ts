@@ -3,7 +3,7 @@
 // 2. Sends transactional email with a signed signup link
 // 3. Notifies Telegram group (fire-and-forget)
 
-import { generateToken } from './_token'
+import { generateToken } from './_token.js'
 
 const BREVO_CONTACTS_URL     = 'https://api.brevo.com/v3/contacts'
 const BREVO_TRANSACTIONAL_URL = 'https://api.brevo.com/v3/smtp/email'

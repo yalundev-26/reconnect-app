@@ -72,7 +72,7 @@ async function addToBrevo(email: string, source: string): Promise<void> {
 async function sendAccessEmail(email: string, token: string, baseUrl: string): Promise<void> {
   const apiKey      = process.env.BREVO_API_KEY
   const senderEmail = process.env.BREVO_SENDER_EMAIL
-  const senderName  = process.env.BREVO_SENDER_NAME ?? 'SyiyQ'
+  const senderName  = process.env.BREVO_SENDER_NAME ?? 'Reconnect'
   if (!apiKey || !senderEmail) throw new Error('BREVO_SENDER_EMAIL is not set in environment variables.')
 
   const link = `${baseUrl}/signup?token=${encodeURIComponent(token)}`
@@ -113,7 +113,7 @@ async function sendAccessEmail(email: string, token: string, baseUrl: string): P
                   <td style="background:#0f172a;border-radius:14px;padding:12px 20px">
                     <span style="font-size:22px;font-weight:900;color:#ffffff;
                                  letter-spacing:-0.5px;font-family:Arial,sans-serif">
-                      SyiyQ
+                      Reconnect
                     </span>
                   </td>
                 </tr>
@@ -152,7 +152,7 @@ async function sendAccessEmail(email: string, token: string, baseUrl: string): P
                   <td style="padding:32px 28px 24px">
                     <p style="margin:0 0 6px;font-size:12px;font-weight:700;color:#7dd3fc;
                                letter-spacing:1.5px;text-transform:uppercase;font-family:Arial,sans-serif">
-                      Welcome to SyiyQ
+                      Welcome to Reconnect
                     </p>
                     <h2 style="margin:0 0 24px;font-size:24px;font-weight:800;color:#ffffff;
                                line-height:1.25;font-family:Arial,sans-serif">
@@ -249,7 +249,7 @@ async function sendAccessEmail(email: string, token: string, baseUrl: string): P
             <td align="center"
                 style="background:#f8fafc;padding:20px 40px;border-top:1px solid #e2e8f0">
               <p style="margin:0;font-size:12px;color:#94a3b8;line-height:1.6;text-align:center">
-                &copy; 2026 SyiyQ. All rights reserved.<br/>
+                &copy; 2026 Reconnect. All rights reserved.<br/>
                 If you didn't request this email, you can safely ignore it.
               </p>
             </td>

@@ -6,16 +6,13 @@ declare const fbq: (event: string, name: string) => void
 
 type Status = 'idle' | 'loading' | 'success' | 'error'
 
-async function submitLead(email: string): Promise<void> {
+async function submitLead(email: string, honeypot: string): Promise<void> {
   if (import.meta.env.DEV) {
-    // In local dev (npm run dev), /api/submit doesn't run under Vite.
-    // Call Brevo directly using the VITE_ env vars instead.
+    if (honeypot) return // silently ignore bots in dev
     await addContactToBrevo({ email, source: 'meta_web' })
     return
   }
 
-  // In production (Vercel), use the serverless function which also
-  // notifies the Telegram group.
   const ctrl    = new AbortController()
   const timeout = setTimeout(() => ctrl.abort(), 12000) // 12s — never hang forever
 
@@ -23,7 +20,7 @@ async function submitLead(email: string): Promise<void> {
     const res = await fetch('/api/submit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, source: 'meta_web' }),
+      body: JSON.stringify({ email, source: 'meta_web', _hp: honeypot }),
       signal: ctrl.signal,
     })
 
@@ -51,11 +48,12 @@ export default function SearchForm() {
 
   async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault()
+    const honeypot = (e.currentTarget.elements as HTMLFormControlsCollection & { _hp?: HTMLInputElement })._hp?.value ?? ''
     setStatus('loading')
     setErrorMsg('')
 
     try {
-      await submitLead(email)
+      await submitLead(email, honeypot)
 
       // Fire Meta Pixel Lead event
       if (typeof fbq !== 'undefined') {
@@ -94,6 +92,9 @@ export default function SearchForm() {
       </p>
 
       <form onSubmit={handleSubmit} noValidate>
+        {/* Honeypot — hidden from humans, bots fill it */}
+        <input name="_hp" type="text" style={{ display: 'none' }} tabIndex={-1} autoComplete="off" aria-hidden="true" />
+
         <div className="mb-4">
           <input
             type="email"

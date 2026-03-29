@@ -78,6 +78,24 @@ function fetchT(url: string, opts: RequestInit, ms = 8000): Promise<Response> {
   return fetch(url, { ...opts, signal: ctrl.signal }).finally(() => clearTimeout(id))
 }
 
+// ── Brevo: check if already signed up ────────────────────────────────────────
+
+async function isAlreadySignedUp(email: string): Promise<boolean> {
+  const apiKey = process.env.BREVO_API_KEY
+  if (!apiKey) return false
+  try {
+    const res = await fetchT(
+      `${BREVO_CONTACTS_URL}/${encodeURIComponent(email)}`,
+      { headers: { 'api-key': apiKey } },
+    )
+    if (!res.ok) return false
+    const contact = await res.json().catch(() => ({}))
+    return !!(contact?.attributes?.PASSWORD_HASH)
+  } catch {
+    return false
+  }
+}
+
 // ── Brevo: update full profile ────────────────────────────────────────────────
 
 async function updateBrevoProfile(
@@ -179,7 +197,15 @@ export default async function handler(req: Request): Promise<Response> {
     )
   }
 
-  const email        = result.email!
+  const email = result.email!
+
+  if (await isAlreadySignedUp(email)) {
+    return Response.json(
+      { error: 'This email is already registered. Each link can only be used once.' },
+      { status: 409 },
+    )
+  }
+
   const passwordHash = await hashPassword(password, email)
   const profileData  = { firstName, lastName, schoolName, cityName, yearFrom, yearTo, password, communityPrefs }
 

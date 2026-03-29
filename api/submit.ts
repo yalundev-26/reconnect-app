@@ -302,9 +302,12 @@ export default async function handler(req: Request): Promise<Response> {
     return new Response('Method not allowed', { status: 405 })
   }
 
-  let body: { email?: string; source?: string }
+  let body: { email?: string; source?: string; _hp?: string }
   try { body = await req.json() }
   catch { return new Response('Invalid JSON', { status: 400 }) }
+
+  // Honeypot — bots fill hidden fields, humans don't
+  if (body?._hp) return Response.json({ ok: true })
 
   const email  = body?.email?.trim()
   const source = body?.source ?? 'meta_web'

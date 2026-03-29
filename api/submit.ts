@@ -65,11 +65,10 @@ export default async function handler(req: Request): Promise<Response> {
   }
 
   try {
-    // Run both in parallel — Telegram notify doesn't block Brevo
-    await Promise.all([
-      addToBrevo(email, source),
-      notifyTelegramGroup(email, source),
-    ])
+    await addToBrevo(email, source)
+
+    // Fire-and-forget — Telegram must never block the response
+    notifyTelegramGroup(email, source).catch(() => { /* ignore */ })
 
     return Response.json({ ok: true })
   } catch (err) {

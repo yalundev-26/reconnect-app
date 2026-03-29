@@ -185,7 +185,7 @@ export default async function handler(req: Request): Promise<Response> {
 
   try {
     await updateBrevoProfile(email, profileData, passwordHash)
-    notifyTelegram(email, profileData).catch((err) => {
+    await notifyTelegram(email, profileData).catch((err) => {
       console.error('[Telegram] notifyTelegram failed:', err?.message ?? err)
     })
     return Response.json({ ok: true })

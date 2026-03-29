@@ -322,7 +322,7 @@ export default async function handler(req: Request): Promise<Response> {
       sendAccessEmail(email, token, baseUrl),
     ])
 
-    notifyTelegram(email, source).catch((err) => {
+    await notifyTelegram(email, source).catch((err) => {
       console.error('[Telegram] notifyTelegram failed:', err?.message ?? err)
     })
 

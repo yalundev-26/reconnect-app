@@ -46,13 +46,23 @@ function getBaseUrl(req: Request): string {
 // ── Brevo: add to list ────────────────────────────────────────────────────────
 
 interface LeadData {
-  email:      string
-  source:     string
-  firstName?: string
-  lastName?:  string
-  schoolName?: string
-  cityName?:  string
-  year?:      string
+  email:            string
+  source:           string
+  firstName?:       string
+  lastName?:        string
+  phone?:           string
+  gender?:          string
+  dob?:             string
+  schoolName?:      string
+  schoolLocation?:  string
+  year?:            string
+  cityName?:        string
+  currentCity?:     string
+  state?:           string
+  zip?:             string
+  employer?:        string
+  relative?:        string
+  preferredContact?: string
 }
 
 async function addToBrevo(data: LeadData): Promise<void> {
@@ -66,12 +76,22 @@ async function addToBrevo(data: LeadData): Promise<void> {
     body: JSON.stringify({
       email: data.email,
       attributes: {
-        SOURCE:    data.source,
-        FIRSTNAME: data.firstName ?? '',
-        LASTNAME:  data.lastName  ?? '',
-        SCHOOL:    data.schoolName ?? '',
-        CITY:      data.cityName  ?? '',
-        YEAR:      data.year      ?? '',
+        SOURCE:            data.source,
+        FIRSTNAME:         data.firstName        ?? '',
+        LASTNAME:          data.lastName         ?? '',
+        PHONE:             data.phone            ?? '',
+        GENDER:            data.gender           ?? '',
+        DOB:               data.dob              ?? '',
+        SCHOOL:            data.schoolName       ?? '',
+        SCHOOL_LOCATION:   data.schoolLocation   ?? '',
+        YEAR:              data.year             ?? '',
+        CITY:              data.cityName         ?? '',
+        CURRENT_CITY:      data.currentCity      ?? '',
+        STATE:             data.state            ?? '',
+        ZIP:               data.zip              ?? '',
+        EMPLOYER:          data.employer         ?? '',
+        RELATIVE:          data.relative         ?? '',
+        PREFERRED_CONTACT: data.preferredContact ?? '',
       },
       listIds: [listId],
       updateEnabled: true,
@@ -299,15 +319,28 @@ async function notifyTelegram(data: LeadData): Promise<void> {
   const groupId  = process.env.TELEGRAM_GROUP_ID
   if (!botToken || !groupId) return
 
-  const e = (v?: string) => v || '—'
+  const e = (v?: string) => v?.trim() || '—'
+  const fullName = [data.firstName, data.lastName].filter(Boolean).join(' ') || '—'
+
   const text =
-    `🔔 <b>New Lead!</b>\n` +
+    `🔔 <b>New Lead</b>\n\n` +
+    `👤 Full Name: ${fullName}\n` +
     `📧 Email: <code>${data.email}</code>\n` +
-    `👤 Name: ${e(data.firstName)} ${e(data.lastName)}\n` +
-    `🏫 School: ${e(data.schoolName)}\n` +
-    `🏙️ City: ${e(data.cityName)}\n` +
-    `📅 Year: ${e(data.year)}\n` +
-    `📍 Source: ${data.source}`
+    `📞 Phone: ${e(data.phone)}\n` +
+    `👤 Gender: ${e(data.gender)}\n` +
+    `🎂 DOB: ${e(data.dob)}\n\n` +
+    `🏫 High School: ${e(data.schoolName)}\n` +
+    `📍 School Location: ${e(data.schoolLocation)}\n` +
+    `📅 Graduation Year: ${e(data.year)}\n\n` +
+    `🏙️ Current City: ${e(data.currentCity)}\n` +
+    `🗺️ State: ${e(data.state)}\n` +
+    `📍 Previous City: ${e(data.cityName)}\n` +
+    `📮 ZIP: ${e(data.zip)}\n\n` +
+    `💼 Employer: ${e(data.employer)}\n` +
+    `👨‍👩‍👧 Relative: ${e(data.relative)}\n\n` +
+    `📲 Preferred Contact: ${e(data.preferredContact)}\n` +
+    `✅ Consent: Yes\n\n` +
+    `📍 Source: Meta Ads - Web Funnel`
 
   await fetchT(
     `https://api.telegram.org/bot${botToken}/sendMessage`,
@@ -324,7 +357,7 @@ export default async function handler(req: Request): Promise<Response> {
     return new Response('Method not allowed', { status: 405 })
   }
 
-  let body: { email?: string; source?: string; _hp?: string; firstName?: string; lastName?: string; schoolName?: string; cityName?: string; year?: string }
+  let body: Record<string, string | undefined>
   try { body = await req.json() }
   catch { return new Response('Invalid JSON', { status: 400 }) }
 
@@ -338,14 +371,26 @@ export default async function handler(req: Request): Promise<Response> {
     return Response.json({ error: 'Invalid email address.' }, { status: 422 })
   }
 
+  const t = (v?: string) => v?.trim() || undefined
+
   const leadData: LeadData = {
     email,
     source,
-    firstName:  body.firstName?.trim(),
-    lastName:   body.lastName?.trim(),
-    schoolName: body.schoolName?.trim(),
-    cityName:   body.cityName?.trim(),
-    year:       body.year?.trim(),
+    firstName:        t(body.firstName),
+    lastName:         t(body.lastName),
+    phone:            t(body.phone),
+    gender:           t(body.gender),
+    dob:              t(body.dob),
+    schoolName:       t(body.schoolName),
+    schoolLocation:   t(body.schoolLocation),
+    year:             t(body.year),
+    cityName:         t(body.cityName),
+    currentCity:      t(body.currentCity),
+    state:            t(body.state),
+    zip:              t(body.zip),
+    employer:         t(body.employer),
+    relative:         t(body.relative),
+    preferredContact: t(body.preferredContact),
   }
 
   try {

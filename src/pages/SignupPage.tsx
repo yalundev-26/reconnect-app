@@ -37,6 +37,28 @@ const YEARS = Array.from({ length: 2026 - 1960 + 1 }, (_, i) => String(2026 - i)
 
 type Status = 'idle' | 'loading' | 'success' | 'error'
 
+type ProfileErrors = Partial<Record<keyof ProfileForm, string>>
+
+function validateProfile(form: ProfileForm): ProfileErrors {
+  const errs: ProfileErrors = {}
+  if (!form.firstName.trim()) errs.firstName = 'First name is required.'
+  if (!form.lastName.trim())  errs.lastName  = 'Last name is required.'
+  if (!form.password) {
+    errs.password = 'Password is required.'
+  } else if (form.password.length < 8) {
+    errs.password = 'Password must be at least 8 characters.'
+  }
+  if (!form.confirmPassword) {
+    errs.confirmPassword = 'Please confirm your password.'
+  } else if (form.password !== form.confirmPassword) {
+    errs.confirmPassword = 'Passwords do not match.'
+  }
+  if (form.yearFrom && form.yearTo && Number(form.yearTo) < Number(form.yearFrom)) {
+    errs.yearTo = '"Year To" must be the same as or after "Year From".'
+  }
+  return errs
+}
+
 const inputClass =
   'w-full px-4 py-3.5 border border-[#cbd5e1] rounded-[10px] text-[15px] outline-none focus:border-[#2563eb] transition-colors disabled:opacity-50 bg-white'
 
@@ -67,11 +89,16 @@ export default function SignupPage() {
   const [form, setForm]           = useState<ProfileForm>(initial)
   const [status, setStatus]       = useState<Status>('idle')
   const [errorMsg, setErrorMsg]   = useState('')
+  const [errors, setErrors]       = useState<ProfileErrors>({})
   const [showPwd, setShowPwd]     = useState(false)
   const [showConf, setShowConf]   = useState(false)
 
   function handleChange(e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
-    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
+    const { name, value } = e.target
+    setForm(prev => ({ ...prev, [name]: value }))
+    if (errors[name as keyof ProfileForm]) {
+      setErrors(prev => ({ ...prev, [name]: undefined }))
+    }
   }
 
   function togglePref(value: string) {
@@ -87,14 +114,9 @@ export default function SignupPage() {
     e.preventDefault()
     setErrorMsg('')
 
-    if (form.password.length < 8) {
-      setErrorMsg('Password must be at least 8 characters.')
-      setStatus('error')
-      return
-    }
-    if (form.password !== form.confirmPassword) {
-      setErrorMsg('Passwords do not match.')
-      setStatus('error')
+    const fieldErrors = validateProfile(form)
+    if (Object.keys(fieldErrors).length > 0) {
+      setErrors(fieldErrors)
       return
     }
 
@@ -190,15 +212,17 @@ export default function SignupPage() {
           <div className="grid grid-cols-2 gap-3 mb-3 max-[480px]:grid-cols-1">
             <div>
               <label className={labelClass}>First Name *</label>
-              <input name="firstName" type="text" placeholder="First name" required
+              <input name="firstName" type="text" placeholder="First name"
                 value={form.firstName} onChange={handleChange} disabled={isLoading}
-                className={inputClass} />
+                className={`${inputClass} ${errors.firstName ? 'border-red-400' : ''}`} />
+              {errors.firstName && <p className="mt-1 text-[12px] text-red-600">{errors.firstName}</p>}
             </div>
             <div>
               <label className={labelClass}>Last Name *</label>
-              <input name="lastName" type="text" placeholder="Last name" required
+              <input name="lastName" type="text" placeholder="Last name"
                 value={form.lastName} onChange={handleChange} disabled={isLoading}
-                className={inputClass} />
+                className={`${inputClass} ${errors.lastName ? 'border-red-400' : ''}`} />
+              {errors.lastName && <p className="mt-1 text-[12px] text-red-600">{errors.lastName}</p>}
             </div>
           </div>
 
@@ -231,10 +255,11 @@ export default function SignupPage() {
             <div>
               <label className={labelClass}>Year To</label>
               <select name="yearTo" value={form.yearTo} onChange={handleChange}
-                disabled={isLoading} className={selectClass}>
+                disabled={isLoading} className={`${selectClass} ${errors.yearTo ? 'border-red-400' : ''}`}>
                 <option value="">Select year</option>
                 {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
               </select>
+              {errors.yearTo && <p className="mt-1 text-[12px] text-red-600">{errors.yearTo}</p>}
             </div>
           </div>
 
@@ -244,27 +269,29 @@ export default function SignupPage() {
           <div className="mb-3 relative">
             <label className={labelClass}>Password *</label>
             <input name="password" type={showPwd ? 'text' : 'password'}
-              placeholder="Min. 8 characters" required minLength={8}
+              placeholder="Min. 8 characters"
               value={form.password} onChange={handleChange} disabled={isLoading}
-              className={inputClass + ' pr-20'} />
+              className={`${inputClass} pr-20 ${errors.password ? 'border-red-400' : ''}`} />
             <button type="button" tabIndex={-1}
               onClick={() => setShowPwd(v => !v)}
               className="absolute right-3 top-[38px] text-[12px] font-semibold text-[#2563eb] cursor-pointer bg-transparent border-0 p-0">
               {showPwd ? 'Hide' : 'Show'}
             </button>
+            {errors.password && <p className="mt-1 text-[12px] text-red-600">{errors.password}</p>}
           </div>
 
           <div className="mb-6 relative">
             <label className={labelClass}>Confirm Password *</label>
             <input name="confirmPassword" type={showConf ? 'text' : 'password'}
-              placeholder="Repeat your password" required
+              placeholder="Repeat your password"
               value={form.confirmPassword} onChange={handleChange} disabled={isLoading}
-              className={inputClass + ' pr-20'} />
+              className={`${inputClass} pr-20 ${errors.confirmPassword ? 'border-red-400' : ''}`} />
             <button type="button" tabIndex={-1}
               onClick={() => setShowConf(v => !v)}
               className="absolute right-3 top-[38px] text-[12px] font-semibold text-[#2563eb] cursor-pointer bg-transparent border-0 p-0">
               {showConf ? 'Hide' : 'Show'}
             </button>
+            {errors.confirmPassword && <p className="mt-1 text-[12px] text-red-600">{errors.confirmPassword}</p>}
           </div>
 
           {/* ─── Community Preferences ─────────────────────────────────── */}

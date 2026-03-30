@@ -1,6 +1,64 @@
 const BREVO_CONTACTS_URL      = 'https://api.brevo.com/v3/contacts'
 const BREVO_TRANSACTIONAL_URL = 'https://api.brevo.com/v3/smtp/email'
 
+// ── Disposable / temp email domain blocklist ──────────────────────────────────
+const BLOCKED_DOMAINS = new Set([
+  // Major disposable services
+  'mailinator.com', 'guerrillamail.com', 'guerrillamail.info', 'guerrillamail.biz',
+  'guerrillamail.de', 'guerrillamail.net', 'guerrillamail.org', 'sharklasers.com',
+  'grr.la', 'spam4.me', 'trashmail.com', 'trashmail.me', 'trashmail.net',
+  'tempmail.com', 'temp-mail.org', 'tempr.email', 'tempinbox.com', 'temp-mail.io',
+  '10minutemail.com', '10minutemail.net', '10minutemail.org', '10minutemail.de',
+  'throwaway.email', 'throwawayemail.com', 'throwam.com', 'throwme.pw',
+  'yopmail.com', 'yopmail.fr', 'yopmail.net', 'cool.fr.nf',
+  'dispostable.com', 'disposeamail.com', 'mailexpire.com',
+  'spamex.com', 'spaml.com', 'spamgourmet.com', 'spamhole.com',
+  'mailnull.com', 'maildrop.cc', 'getairmail.com',
+  'owlpic.com', 'filzmail.com', 'wegwerfemail.de',
+  'binkmail.com', 'safetymail.info', 'letthemeatspam.com',
+  'zetmail.com', 'trbvm.com', 'fakeinbox.com',
+  'getnada.com', 'mailnesia.com', 'mintemail.com',
+  'pookmail.com', 'sogetthis.com', 'spamgourmet.net',
+  'spamgourmet.org', 'mailnull.com', 'spamtraps.de',
+  'discard.email', 'discardmail.com', 'discardmail.de',
+  'crapmail.org', 'junk.to', 'spam.la',
+  'anonbox.net', 'anonymbox.com', 'spambox.us',
+  'inboxalias.com', 'mytrashmail.com', 'mt2014.com',
+  'notsharingmy.info', 'trashmail.at', 'trashmail.io',
+  'trashmail.me', 'trashmail.org', 'trashmailer.com',
+])
+
+// ── MX record check via Cloudflare DNS-over-HTTPS ─────────────────────────────
+// Runs on Edge — no Node.js DNS module needed.
+// Fail-open: if the lookup errors out, we allow the email through.
+async function hasValidMX(domain: string): Promise<boolean> {
+  try {
+    const res = await fetchT(
+      `https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(domain)}&type=MX`,
+      { headers: { Accept: 'application/dns-json' } },
+      4000,
+    )
+    if (!res.ok) return true
+    const data = await res.json() as { Status: number; Answer?: unknown[] }
+    return data.Status === 0 && Array.isArray(data.Answer) && data.Answer.length > 0
+  } catch {
+    return true // network failure → don't block real users
+  }
+}
+
+async function validateEmailDomain(email: string): Promise<string | null> {
+  const domain = email.split('@')[1]?.toLowerCase()
+  if (!domain) return 'Invalid email address.'
+  if (BLOCKED_DOMAINS.has(domain)) {
+    return 'Disposable email addresses are not accepted. Please use your real email.'
+  }
+  const valid = await hasValidMX(domain)
+  if (!valid) {
+    return 'That email domain doesn\'t appear to exist. Please double-check your address.'
+  }
+  return null
+}
+
 // ── Token (inlined — no cross-file imports) ───────────────────────────────────
 
 function toBase64url(str: string): string {
@@ -369,6 +427,11 @@ export default async function handler(req: Request): Promise<Response> {
 
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return Response.json({ error: 'Invalid email address.' }, { status: 422 })
+  }
+
+  const domainError = await validateEmailDomain(email)
+  if (domainError) {
+    return Response.json({ error: domainError }, { status: 422 })
   }
 
   const t = (v?: string) => v?.trim() || undefined

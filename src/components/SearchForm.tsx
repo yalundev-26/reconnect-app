@@ -49,6 +49,29 @@ const initial: LeadForm = {
   preferredContact: '',
 }
 
+// Disposable / temp email domain blocklist (mirrors server-side list)
+const BLOCKED_DOMAINS = new Set([
+  'mailinator.com', 'guerrillamail.com', 'guerrillamail.info', 'guerrillamail.biz',
+  'guerrillamail.de', 'guerrillamail.net', 'guerrillamail.org', 'sharklasers.com',
+  'grr.la', 'spam4.me', 'trashmail.com', 'trashmail.me', 'trashmail.net',
+  'tempmail.com', 'temp-mail.org', 'tempr.email', 'tempinbox.com', 'temp-mail.io',
+  '10minutemail.com', '10minutemail.net', '10minutemail.org', '10minutemail.de',
+  'throwaway.email', 'throwawayemail.com', 'throwam.com', 'throwme.pw',
+  'yopmail.com', 'yopmail.fr', 'yopmail.net', 'cool.fr.nf',
+  'dispostable.com', 'disposeamail.com', 'mailexpire.com',
+  'spamex.com', 'spaml.com', 'spamgourmet.com', 'spamhole.com',
+  'mailnull.com', 'maildrop.cc', 'getairmail.com',
+  'owlpic.com', 'filzmail.com', 'wegwerfemail.de',
+  'binkmail.com', 'safetymail.info', 'letthemeatspam.com',
+  'zetmail.com', 'trbvm.com', 'fakeinbox.com',
+  'getnada.com', 'mailnesia.com', 'mintemail.com',
+  'pookmail.com', 'sogetthis.com', 'discard.email',
+  'discardmail.com', 'discardmail.de', 'crapmail.org',
+  'junk.to', 'spam.la', 'anonbox.net', 'anonymbox.com', 'spambox.us',
+  'inboxalias.com', 'mytrashmail.com', 'mt2014.com',
+  'trashmail.at', 'trashmail.io', 'trashmail.org', 'trashmailer.com',
+])
+
 type LeadErrors = Partial<Record<keyof LeadForm, string>>
 
 function validateLead(form: LeadForm): LeadErrors {
@@ -62,6 +85,11 @@ function validateLead(form: LeadForm): LeadErrors {
     const EMAIL_RE = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/
     if (!EMAIL_RE.test(emailNorm)) {
       errs.email = 'Please enter a valid email address (e.g. name@example.com).'
+    } else {
+      const domain = emailNorm.split('@')[1]
+      if (domain && BLOCKED_DOMAINS.has(domain)) {
+        errs.email = 'Disposable email addresses are not accepted. Please use your real email.'
+      }
     }
   }
   if (form.phone.trim() && !/^[\d\s\-+().]{7,20}$/.test(form.phone.trim())) {

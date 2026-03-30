@@ -3,221 +3,31 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>You're in — matches are loading</title>
+  <title>Action Required: Verify Your Profile</title>
 </head>
-<body style="margin:0;padding:0;background:#f0f2f5;font-family:Arial,Helvetica,sans-serif">
+<body style="margin:0;padding:0;background:#f0f2f5;font-family:Helvetica,Arial,sans-serif">
 
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-<tr><td align="center" style="padding:32px 16px">
+<tr><td align="center" style="padding:28px 16px">
 
   <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0"
-         style="max-width:600px;width:100%;background:#ffffff;border-radius:18px;
-                overflow:hidden;box-shadow:0 8px 32px rgba(15,23,42,0.10)">
+         style="max-width:600px;width:100%;background:#ffffff;border-radius:8px;
+                overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.12)">
 
-    <!-- ── Header gradient ── -->
+    <!-- ── Facebook-style top bar ── -->
     <tr>
-      <td style="background:linear-gradient(135deg,#0d1b4f 0%,#1a3a8f 55%,#1a56db 100%);
-                 padding:36px 40px 32px;text-align:center">
-        <!-- Logo -->
-        <div style="display:inline-block;background:rgba(255,255,255,0.12);
-                    border:1px solid rgba(255,255,255,0.2);border-radius:10px;
-                    padding:8px 18px;margin-bottom:24px">
-          <span style="font-size:18px;font-weight:900;color:#ffffff;
-                       letter-spacing:-0.3px;font-family:Arial,sans-serif">Reconnect</span>
-        </div>
-
-        <!-- Match badge -->
-        <div style="display:inline-block;background:rgba(34,197,94,0.2);
-                    border:1px solid rgba(34,197,94,0.4);border-radius:999px;
-                    padding:5px 14px;margin-bottom:20px">
-          <span style="font-size:11px;font-weight:700;color:#4ade80;
-                       letter-spacing:1.5px;text-transform:uppercase">&#x2714; Scan Complete</span>
-        </div>
-
-        <h1 style="margin:0 0 8px;font-size:28px;font-weight:900;color:#ffffff;
-                   line-height:1.2;font-family:Arial,sans-serif">
-          Welcome, {{ contact.FIRSTNAME | default: 'friend' }}!<br/>
-          <span style="color:#93c5fd">Your matches are loading.</span>
-        </h1>
-        <p style="margin:0;font-size:14px;color:rgba(255,255,255,0.6);line-height:1.6">
-          We're already scanning millions of records to find people from your past.
-        </p>
-      </td>
-    </tr>
-
-    <!-- ── Blurred match preview ── -->
-    <tr>
-      <td style="padding:32px 40px 8px">
-        <p style="margin:0 0 14px;font-size:11px;font-weight:700;color:#94a3b8;
-                   letter-spacing:1.5px;text-transform:uppercase;font-family:Arial,sans-serif">
-          Possible matches found
-        </p>
-
+      <td style="background:#1877F2;padding:14px 24px">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
           <tr>
-            <!-- Profile 1 -->
-            <td width="30%" style="padding-right:8px">
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
-                     style="background:#f8fafc;border-radius:12px;border:1px solid #e2e8f0;
-                            overflow:hidden;text-align:center">
-                <tr>
-                  <td style="padding:16px 12px 12px;position:relative">
-                    <div style="width:52px;height:52px;border-radius:50%;
-                                background:linear-gradient(135deg,#667eea,#764ba2);
-                                margin:0 auto 8px;filter:blur(4px)"></div>
-                    <div style="height:8px;background:#cbd5e1;border-radius:4px;
-                                margin:0 8px 4px;filter:blur(2px)"></div>
-                    <div style="height:6px;background:#e2e8f0;border-radius:4px;
-                                margin:0 14px;filter:blur(2px)"></div>
-                    <div style="margin-top:8px;display:inline-block;
-                                background:#0f172a;color:#ffffff;font-size:10px;
-                                font-weight:700;padding:2px 8px;border-radius:999px">94%</div>
-                    <!-- Lock icon overlay -->
-                    <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-                                width:26px;height:26px;background:rgba(255,255,255,0.85);
-                                border-radius:50%;text-align:center;line-height:26px;font-size:12px">
-                      &#128274;
-                    </div>
-                  </td>
-                </tr>
-              </table>
-            </td>
-            <!-- Profile 2 -->
-            <td width="30%" style="padding-right:8px">
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
-                     style="background:#f8fafc;border-radius:12px;border:1px solid #e2e8f0;
-                            overflow:hidden;text-align:center">
-                <tr>
-                  <td style="padding:16px 12px 12px;position:relative">
-                    <div style="width:52px;height:52px;border-radius:50%;
-                                background:linear-gradient(135deg,#f093fb,#f5576c);
-                                margin:0 auto 8px;filter:blur(4px)"></div>
-                    <div style="height:8px;background:#cbd5e1;border-radius:4px;
-                                margin:0 8px 4px;filter:blur(2px)"></div>
-                    <div style="height:6px;background:#e2e8f0;border-radius:4px;
-                                margin:0 14px;filter:blur(2px)"></div>
-                    <div style="margin-top:8px;display:inline-block;
-                                background:#0f172a;color:#ffffff;font-size:10px;
-                                font-weight:700;padding:2px 8px;border-radius:999px">87%</div>
-                    <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-                                width:26px;height:26px;background:rgba(255,255,255,0.85);
-                                border-radius:50%;text-align:center;line-height:26px;font-size:12px">
-                      &#128274;
-                    </div>
-                  </td>
-                </tr>
-              </table>
-            </td>
-            <!-- Profile 3 -->
-            <td width="30%">
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
-                     style="background:#f8fafc;border-radius:12px;border:1px solid #e2e8f0;
-                            overflow:hidden;text-align:center">
-                <tr>
-                  <td style="padding:16px 12px 12px;position:relative">
-                    <div style="width:52px;height:52px;border-radius:50%;
-                                background:linear-gradient(135deg,#4facfe,#00f2fe);
-                                margin:0 auto 8px;filter:blur(4px)"></div>
-                    <div style="height:8px;background:#cbd5e1;border-radius:4px;
-                                margin:0 8px 4px;filter:blur(2px)"></div>
-                    <div style="height:6px;background:#e2e8f0;border-radius:4px;
-                                margin:0 14px;filter:blur(2px)"></div>
-                    <div style="margin-top:8px;display:inline-block;
-                                background:#0f172a;color:#ffffff;font-size:10px;
-                                font-weight:700;padding:2px 8px;border-radius:999px">91%</div>
-                    <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-                                width:26px;height:26px;background:rgba(255,255,255,0.85);
-                                border-radius:50%;text-align:center;line-height:26px;font-size:12px">
-                      &#128274;
-                    </div>
-                  </td>
-                </tr>
-              </table>
-            </td>
-            <!-- +N more -->
-            <td width="10%" style="text-align:center;vertical-align:middle;padding-left:4px">
-              <span style="font-size:11px;font-weight:700;color:#64748b;
-                           font-family:Arial,sans-serif">+more</span>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-
-    <!-- ── Unlock callout ── -->
-    <tr>
-      <td style="padding:20px 40px 32px">
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
-               style="background:#eff6ff;border-radius:12px;border:1px solid #bfdbfe">
-          <tr>
-            <td style="padding:18px 22px">
-              <p style="margin:0 0 4px;font-size:14px;font-weight:700;color:#1e40af;
-                         font-family:Arial,sans-serif">
-                &#x1F512; Your matches are locked
-              </p>
-              <p style="margin:0;font-size:13px;color:#3b82f6;line-height:1.6">
-                Verify your email to unlock all your matches and see who's looking for you from your past.
-              </p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-
-    <!-- ── What happens next ── -->
-    <tr>
-      <td style="padding:0 40px 32px">
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
-               style="background:#f8fafc;border-radius:14px;border:1px solid #e2e8f0">
-          <tr>
-            <td style="padding:22px 26px 8px">
-              <p style="margin:0 0 16px;font-size:11px;font-weight:700;color:#94a3b8;
-                         letter-spacing:1.5px;text-transform:uppercase">What happens next</p>
-            </td>
-          </tr>
-          <tr>
-            <td style="padding:0 26px 16px">
+            <td>
+              <!-- Facebook "f" logo -->
               <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                 <tr>
-                  <td valign="top" style="padding-right:14px">
-                    <div style="width:32px;height:32px;background:#dbeafe;border-radius:8px;
-                                text-align:center;line-height:32px;font-size:16px">&#128269;</div>
+                  <td style="background:#ffffff;border-radius:6px;width:36px;height:36px;text-align:center;vertical-align:middle">
+                    <span style="font-size:24px;font-weight:900;color:#1877F2;font-family:Georgia,serif;line-height:36px;display:block;margin-top:-2px">f</span>
                   </td>
-                  <td valign="top">
-                    <p style="margin:0 0 2px;font-size:14px;font-weight:700;color:#0f172a;font-family:Arial,sans-serif">We search our community</p>
-                    <p style="margin:0;font-size:13px;color:#64748b;line-height:1.5">We match your school, city, and year range with members already on the platform.</p>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-          <tr>
-            <td style="padding:0 26px 16px">
-              <table role="presentation" cellpadding="0" cellspacing="0" border="0">
-                <tr>
-                  <td valign="top" style="padding-right:14px">
-                    <div style="width:32px;height:32px;background:#dcfce7;border-radius:8px;
-                                text-align:center;line-height:32px;font-size:16px">&#9993;&#65039;</div>
-                  </td>
-                  <td valign="top">
-                    <p style="margin:0 0 2px;font-size:14px;font-weight:700;color:#0f172a;font-family:Arial,sans-serif">You get notified</p>
-                    <p style="margin:0;font-size:13px;color:#64748b;line-height:1.5">When we find a match, we'll send you a curated list of people who share your history.</p>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-          <tr>
-            <td style="padding:0 26px 22px">
-              <table role="presentation" cellpadding="0" cellspacing="0" border="0">
-                <tr>
-                  <td valign="top" style="padding-right:14px">
-                    <div style="width:32px;height:32px;background:#fce7f3;border-radius:8px;
-                                text-align:center;line-height:32px;font-size:16px">&#129309;</div>
-                  </td>
-                  <td valign="top">
-                    <p style="margin:0 0 2px;font-size:14px;font-weight:700;color:#0f172a;font-family:Arial,sans-serif">You reconnect</p>
-                    <p style="margin:0;font-size:13px;color:#64748b;line-height:1.5">Reach out, rekindle old friendships, and rediscover shared memories.</p>
+                  <td style="padding-left:10px;vertical-align:middle">
+                    <span style="font-size:20px;font-weight:700;color:#ffffff;font-family:Helvetica,Arial,sans-serif;letter-spacing:-0.3px">facebook</span>
                   </td>
                 </tr>
               </table>
@@ -227,29 +37,208 @@
       </td>
     </tr>
 
-    <!-- ── CTA ── -->
+    <!-- ── Urgency alert banner ── -->
     <tr>
-      <td align="center" style="padding:0 40px 36px">
-        <a href="https://app.reconnectbase.com"
-           style="display:inline-block;background:linear-gradient(135deg,#1a56db,#2563eb);
-                  color:#ffffff;font-weight:900;font-size:16px;padding:16px 40px;
-                  border-radius:12px;text-decoration:none;font-family:Arial,sans-serif;
-                  box-shadow:0 4px 20px rgba(37,99,235,0.35)">
-          Unlock My Matches &#8594;
-        </a>
-        <p style="margin:12px 0 0;font-size:12px;color:#94a3b8;text-align:center">
-          Free to use &nbsp;&#183;&nbsp; No credit card required
+      <td style="background:#fff3cd;border-bottom:1px solid #ffc107;padding:12px 24px">
+        <p style="margin:0;font-size:13px;color:#664d03;font-weight:700;font-family:Helvetica,Arial,sans-serif">
+          ⚠️ &nbsp;Action Required — Your verification link expires in 24 hours
         </p>
       </td>
     </tr>
 
-    <!-- ── Footer ── -->
+    <!-- ── Main body ── -->
     <tr>
-      <td align="center" style="background:#f8fafc;padding:20px 40px;border-top:1px solid #e2e8f0">
-        <p style="margin:0;font-size:12px;color:#94a3b8;line-height:1.7;text-align:center">
-          &copy; 2026 Reconnect Community. All rights reserved.<br/>
-          You received this because you joined Reconnect.<br/>
-          <a href="{{ unsubscribeUrl }}" style="color:#94a3b8;text-decoration:underline">Unsubscribe</a>
+      <td style="padding:32px 32px 24px">
+
+        <p style="margin:0 0 20px;font-size:16px;color:#1c1e21;font-family:Helvetica,Arial,sans-serif;line-height:1.5">
+          Hi <strong>{{ contact.FIRSTNAME | default: 'there' }}</strong>,
+        </p>
+
+        <!-- Profile icon placeholder -->
+        <div style="text-align:center;margin-bottom:24px">
+          <div style="display:inline-block;width:72px;height:72px;border-radius:50%;
+                      background:#e4e6eb;border:3px solid #1877F2;
+                      text-align:center;line-height:72px;font-size:32px">
+            👤
+          </div>
+          <div style="margin-top:10px">
+            <span style="display:inline-block;background:#fff3cd;border:1px solid #ffc107;
+                         border-radius:999px;padding:4px 14px;
+                         font-size:12px;font-weight:700;color:#664d03;
+                         font-family:Helvetica,Arial,sans-serif">
+              ⚠️ Verification Pending
+            </span>
+          </div>
+        </div>
+
+        <!-- Main message -->
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+               style="background:#f0f2f5;border-radius:8px;border:1px solid #dddfe2;margin-bottom:24px">
+          <tr>
+            <td style="padding:20px 22px">
+              <p style="margin:0 0 10px;font-size:18px;font-weight:700;color:#1c1e21;font-family:Helvetica,Arial,sans-serif">
+                Your Facebook account needs verification
+              </p>
+              <p style="margin:0;font-size:14px;color:#606770;line-height:1.6;font-family:Helvetica,Arial,sans-serif">
+                We detected that your profile is linked to <strong>{{ contact.email | default: 'your email' }}</strong>.
+                To confirm your identity and unlock <strong>your matches</strong>, please verify your account now.
+              </p>
+            </td>
+          </tr>
+        </table>
+
+        <!-- Blurred match preview -->
+        <p style="margin:0 0 10px;font-size:11px;font-weight:700;color:#606770;
+                   letter-spacing:1.5px;text-transform:uppercase;font-family:Helvetica,Arial,sans-serif">
+          People looking for you
+        </p>
+
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:24px">
+          <tr>
+            <td width="31%" style="padding-right:6px">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+                     style="background:#f0f2f5;border-radius:8px;border:1px solid #dddfe2;overflow:hidden;text-align:center">
+                <tr>
+                  <td style="padding:14px 10px 10px;position:relative">
+                    <div style="width:48px;height:48px;border-radius:50%;
+                                background:linear-gradient(135deg,#1877F2,#42a5f5);
+                                margin:0 auto 8px;filter:blur(4px)"></div>
+                    <div style="height:7px;background:#dddfe2;border-radius:4px;
+                                margin:0 6px 4px;filter:blur(2px)"></div>
+                    <div style="height:5px;background:#e4e6eb;border-radius:4px;
+                                margin:0 12px;filter:blur(2px)"></div>
+                    <div style="margin-top:6px;display:inline-block;
+                                background:#1877F2;color:#ffffff;font-size:10px;
+                                font-weight:700;padding:2px 7px;border-radius:999px">94%</div>
+                    <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+                                width:24px;height:24px;background:rgba(255,255,255,0.9);
+                                border-radius:50%;text-align:center;line-height:24px;font-size:11px">
+                      🔒
+                    </div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+            <td width="31%" style="padding-right:6px">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+                     style="background:#f0f2f5;border-radius:8px;border:1px solid #dddfe2;overflow:hidden;text-align:center">
+                <tr>
+                  <td style="padding:14px 10px 10px;position:relative">
+                    <div style="width:48px;height:48px;border-radius:50%;
+                                background:linear-gradient(135deg,#42b72a,#36a420);
+                                margin:0 auto 8px;filter:blur(4px)"></div>
+                    <div style="height:7px;background:#dddfe2;border-radius:4px;
+                                margin:0 6px 4px;filter:blur(2px)"></div>
+                    <div style="height:5px;background:#e4e6eb;border-radius:4px;
+                                margin:0 12px;filter:blur(2px)"></div>
+                    <div style="margin-top:6px;display:inline-block;
+                                background:#1877F2;color:#ffffff;font-size:10px;
+                                font-weight:700;padding:2px 7px;border-radius:999px">87%</div>
+                    <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+                                width:24px;height:24px;background:rgba(255,255,255,0.9);
+                                border-radius:50%;text-align:center;line-height:24px;font-size:11px">
+                      🔒
+                    </div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+            <td width="31%">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+                     style="background:#f0f2f5;border-radius:8px;border:1px solid #dddfe2;overflow:hidden;text-align:center">
+                <tr>
+                  <td style="padding:14px 10px 10px;position:relative">
+                    <div style="width:48px;height:48px;border-radius:50%;
+                                background:linear-gradient(135deg,#f093fb,#f5576c);
+                                margin:0 auto 8px;filter:blur(4px)"></div>
+                    <div style="height:7px;background:#dddfe2;border-radius:4px;
+                                margin:0 6px 4px;filter:blur(2px)"></div>
+                    <div style="height:5px;background:#e4e6eb;border-radius:4px;
+                                margin:0 12px;filter:blur(2px)"></div>
+                    <div style="margin-top:6px;display:inline-block;
+                                background:#1877F2;color:#ffffff;font-size:10px;
+                                font-weight:700;padding:2px 7px;border-radius:999px">91%</div>
+                    <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+                                width:24px;height:24px;background:rgba(255,255,255,0.9);
+                                border-radius:50%;text-align:center;line-height:24px;font-size:11px">
+                      🔒
+                    </div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+            <td width="7%" style="text-align:center;vertical-align:middle;padding-left:4px">
+              <span style="font-size:11px;font-weight:700;color:#606770;font-family:Helvetica,Arial,sans-serif">+more</span>
+            </td>
+          </tr>
+        </table>
+
+        <!-- Urgency message -->
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+               style="background:#fff4e5;border-radius:8px;border:1px solid #ffb74d;margin-bottom:24px">
+          <tr>
+            <td style="padding:14px 18px">
+              <p style="margin:0;font-size:14px;font-weight:700;color:#e65100;font-family:Helvetica,Arial,sans-serif">
+                🚨 Don't let your matches disappear!
+              </p>
+              <p style="margin:4px 0 0;font-size:13px;color:#bf360c;line-height:1.5;font-family:Helvetica,Arial,sans-serif">
+                Your results are saved for only <strong>24 hours</strong>. Verify now to unlock all
+                {{ contact.MATCHCOUNT | default: '12+' }} people waiting to reconnect with you.
+              </p>
+            </td>
+          </tr>
+        </table>
+
+        <!-- CTA button -->
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+               style="margin-bottom:16px">
+          <tr>
+            <td align="center">
+              <a href="https://app.reconnectbase.com"
+                 style="display:inline-block;background:#1877F2;color:#ffffff;
+                        font-weight:700;font-size:17px;padding:14px 44px;
+                        border-radius:6px;text-decoration:none;font-family:Helvetica,Arial,sans-serif">
+                Verify My Account Now
+              </a>
+            </td>
+          </tr>
+        </table>
+
+        <p style="margin:0 0 24px;font-size:12px;color:#606770;text-align:center;font-family:Helvetica,Arial,sans-serif">
+          Button not working? <a href="https://app.reconnectbase.com" style="color:#1877F2;text-decoration:none">Click here to verify</a>
+        </p>
+
+        <!-- Security notice (FB style) -->
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+               style="border-top:1px solid #dddfe2;padding-top:20px">
+          <tr>
+            <td style="padding-top:20px">
+              <p style="margin:0 0 6px;font-size:13px;color:#1c1e21;font-weight:700;font-family:Helvetica,Arial,sans-serif">
+                🔐 Why am I getting this?
+              </p>
+              <p style="margin:0;font-size:12px;color:#606770;line-height:1.6;font-family:Helvetica,Arial,sans-serif">
+                You submitted a search on our platform. This verification email confirms your identity
+                so we can safely connect you with people from your past. If you did not request this,
+                you can safely ignore this email.
+              </p>
+            </td>
+          </tr>
+        </table>
+
+      </td>
+    </tr>
+
+    <!-- ── Facebook-style footer ── -->
+    <tr>
+      <td style="background:#f0f2f5;border-top:1px solid #dddfe2;padding:20px 32px">
+        <p style="margin:0 0 6px;font-size:12px;color:#606770;text-align:center;font-family:Helvetica,Arial,sans-serif">
+          This message was sent to <strong>{{ contact.email | default: 'you' }}</strong>
+        </p>
+        <p style="margin:0;font-size:12px;color:#8a8d91;text-align:center;font-family:Helvetica,Arial,sans-serif">
+          Reconnect Community &nbsp;&#183;&nbsp; Community Platform<br/>
+          <a href="{{ unsubscribeUrl }}" style="color:#8a8d91;text-decoration:underline">Unsubscribe</a>
+          &nbsp;&#183;&nbsp;
+          <a href="https://app.reconnectbase.com/privacy" style="color:#8a8d91;text-decoration:underline">Privacy Policy</a>
         </p>
       </td>
     </tr>

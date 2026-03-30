@@ -101,6 +101,17 @@ function validateLead(form: LeadForm): LeadErrors {
   return errs
 }
 
+function getInboxUrl(email: string): string {
+  const domain = email.split('@')[1]?.toLowerCase() ?? ''
+  if (domain === 'gmail.com' || domain === 'googlemail.com') return 'https://mail.google.com'
+  if (domain.startsWith('yahoo.')) return 'https://mail.yahoo.com'
+  if (['outlook.com', 'hotmail.com', 'live.com', 'msn.com'].includes(domain)) return 'https://outlook.live.com'
+  if (domain === 'aol.com') return 'https://mail.aol.com'
+  if (domain === 'icloud.com' || domain === 'me.com') return 'https://www.icloud.com/mail'
+  if (domain === 'protonmail.com' || domain === 'proton.me') return 'https://mail.proton.me'
+  return `https://mail.${domain}`
+}
+
 type Status = 'idle' | 'searching' | 'matches' | 'success' | 'error'
 
 interface ProgressStep { pct: number; msg: string }
@@ -403,33 +414,42 @@ export default function SearchForm() {
             </div>
           )}
 
-          <div className="rounded-[14px] px-4 py-5 text-center mb-3 relative overflow-hidden" style={{ background: 'linear-gradient(135deg,#1e3a8a,#1e40af)' }}>
-            <div className="absolute inset-0 opacity-[0.08]" style={{ backgroundImage: 'radial-gradient(circle,#fff 1px,transparent 1px)', backgroundSize: '18px 18px' }} />
-            <div className="relative">
-              <div className="w-10 h-10 bg-white/15 rounded-full flex items-center justify-center mx-auto mb-2">
-                <FiMail size={20} color="white" strokeWidth={2} />
-              </div>
-              <p className="text-[15px] font-black text-white mb-1">Check your email to unlock!</p>
-              <p className="text-[12px] text-[#93c5fd] leading-relaxed">
-                We sent a verification link to<br />
-                <span className="font-bold text-white">{form.email}</span>
+          {/* Urgent email check banner */}
+          <div className="rounded-[12px] overflow-hidden mb-3 border-2 border-[#ef4444]" style={{ animation: 'pulseBtn 1.8s ease-in-out infinite' }}>
+            <div className="bg-[#ef4444] px-4 py-2 flex items-center gap-2">
+              <span className="text-white text-[13px] font-black tracking-wide">🚨 CHECK YOUR EMAIL NOW</span>
+            </div>
+            <div className="px-4 py-3 bg-[#fff5f5] text-center">
+              <p className="text-[13px] font-bold text-[#991b1b] mb-0.5">
+                We just sent your verification link to:
               </p>
-              <div className="mt-2.5 inline-block text-[10px] text-[#bfdbfe] bg-white/10 rounded-full px-3 py-1">
-                Tap the link → see all {matchCount.current} matches
-              </div>
+              <p className="text-[14px] font-black text-[#0f172a] mb-1">{form.email}</p>
+              <p className="text-[11px] text-[#dc2626]">
+                ⏱ Link expires in <strong>10 minutes</strong> — open your inbox right now!
+              </p>
             </div>
           </div>
 
+          <a
+            href={getInboxUrl(form.email)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="cta-btn w-full bg-[#2563eb] hover:bg-[#1d4ed8] text-white font-black text-[15px] py-3.75 rounded-xl border-0 cursor-pointer transition-colors duration-200 flex items-center justify-center gap-2 no-underline"
+            style={{ display: 'flex', textDecoration: 'none' }}
+          >
+            <FiMail size={17} strokeWidth={2.5} />
+            Open My Inbox Now →
+          </a>
+
           <button
             onClick={() => setStatus('success')}
-            className="cta-btn w-full bg-[#2563eb] hover:bg-[#1d4ed8] text-white font-black text-[15px] py-3.75 rounded-xl border-0 cursor-pointer transition-colors duration-200 flex items-center justify-center gap-2"
+            className="mt-2 w-full text-[12px] text-[#64748b] underline border-0 bg-transparent cursor-pointer py-1"
           >
-            <FiCheckCircle size={17} strokeWidth={2.5} />
-            I Verified My Email — Show My Matches!
+            I already verified — show my matches
           </button>
 
-          <p className="mt-2 text-[11px] text-[#94a3b8] text-center">
-            Didn't get it? Check your spam folder.
+          <p className="mt-1.5 text-[11px] text-[#94a3b8] text-center">
+            Can't find it? Check your spam / junk folder.
           </p>
         </div>
       </div>
@@ -438,16 +458,68 @@ export default function SearchForm() {
 
   // ── Success state ──
   if (status === 'success') {
+    const inboxUrl = getInboxUrl(form.email)
     return (
-      <div className="flex-1 basis-[380px] bg-white p-8 rounded-[18px] shadow-[0_10px_35px_rgba(15,23,42,0.08)] text-center">
-        <div className="w-16 h-16 bg-[#eff6ff] rounded-full flex items-center justify-center mx-auto mb-4">
-          <FiMail size={30} color="#2563eb" strokeWidth={1.5} />
+      <div className="flex-1 basis-[380px] bg-white rounded-[18px] shadow-[0_10px_35px_rgba(15,23,42,0.08)] overflow-hidden">
+        <style>{`
+          @keyframes bounce {
+            0%,100% { transform: translateY(0); }
+            50%      { transform: translateY(-6px); }
+          }
+          @keyframes urgentPulse {
+            0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.5); }
+            60%      { box-shadow: 0 0 0 10px rgba(239,68,68,0); }
+          }
+          .bounce-icon { animation: bounce 1.4s ease-in-out infinite; }
+          .urgent-btn  { animation: urgentPulse 1.8s ease-in-out infinite; }
+        `}</style>
+
+        {/* Red urgency header */}
+        <div className="bg-[#dc2626] px-6 pt-6 pb-5 text-center">
+          <div className="bounce-icon w-14 h-14 bg-white rounded-full flex items-center justify-center mx-auto mb-3">
+            <FiMail size={28} color="#dc2626" strokeWidth={2} />
+          </div>
+          <h2 className="text-[22px] font-black text-white mb-1">
+            🚨 Check Your Email NOW!
+          </h2>
+          <p className="text-[13px] text-red-100">Your matches are waiting — don't let them disappear</p>
         </div>
-        <h2 className="text-2xl font-bold text-[#0f172a] mb-3">Check your email</h2>
-        <p className="text-[#64748b] text-[15px] leading-relaxed">
-          We just sent your access link to <strong className="text-[#0f172a]">{form.email}</strong>.
-          <br />Open your inbox and click the link to continue.
-        </p>
+
+        <div className="p-5 text-center">
+          <div className="bg-[#fff5f5] border-2 border-[#fca5a5] rounded-[12px] px-4 py-4 mb-5">
+            <p className="text-[13px] text-[#7f1d1d] font-semibold mb-1">We sent your verification link to:</p>
+            <p className="text-[15px] font-black text-[#0f172a] break-all mb-2">{form.email}</p>
+            <p className="text-[12px] text-[#dc2626] font-bold">
+              ⏱ Open it within 10 minutes before it expires
+            </p>
+          </div>
+
+          <a
+            href={inboxUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="urgent-btn w-full bg-[#dc2626] hover:bg-[#b91c1c] text-white font-black text-[16px] py-4 rounded-[12px] border-0 cursor-pointer transition-colors duration-200 flex items-center justify-center gap-2 no-underline mb-3"
+            style={{ display: 'flex', textDecoration: 'none' }}
+          >
+            <FiMail size={20} strokeWidth={2.5} />
+            Open My Email Inbox →
+          </a>
+
+          <div className="space-y-2 text-left">
+            <div className="flex items-start gap-2 text-[12px] text-[#64748b]">
+              <FiCheckCircle size={13} color="#22c55e" className="shrink-0 mt-0.5" />
+              <span>Check your <strong>inbox</strong> for an email from Reconnect</span>
+            </div>
+            <div className="flex items-start gap-2 text-[12px] text-[#64748b]">
+              <FiCheckCircle size={13} color="#22c55e" className="shrink-0 mt-0.5" />
+              <span>Click the verification link in the email</span>
+            </div>
+            <div className="flex items-start gap-2 text-[12px] text-[#64748b]">
+              <FiCheckCircle size={13} color="#22c55e" className="shrink-0 mt-0.5" />
+              <span>Not there? Check your <strong>spam/junk folder</strong></span>
+            </div>
+          </div>
+        </div>
       </div>
     )
   }

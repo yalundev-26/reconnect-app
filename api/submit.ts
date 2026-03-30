@@ -112,7 +112,7 @@ async function sendAccessEmail(email: string, token: string, baseUrl: string): P
   const senderName  = process.env.BREVO_SENDER_NAME ?? 'Reconnect'
   if (!apiKey || !senderEmail) throw new Error('BREVO_SENDER_EMAIL is not set in environment variables.')
 
-  const link = `${baseUrl}/signup?token=${encodeURIComponent(token)}`
+  const link = `https://app.reconnectbase.com`
 
   const res = await fetchT(BREVO_TRANSACTIONAL_URL, {
     method: 'POST',

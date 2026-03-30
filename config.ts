@@ -1,0 +1,1 @@
+export const LINK_MONEY_PAGE="https://app.reconnectbase.com"

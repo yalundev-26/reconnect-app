@@ -139,6 +139,7 @@ async function sendAccessEmail(
   const senderName  = process.env.BREVO_SENDER_NAME ?? 'Reconnect'
   if (!apiKey || !senderEmail) throw new Error('BREVO_SENDER_EMAIL is not set in environment variables.')
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const link        = `https://app.reconnectbase.com`
   const displayName = firstName?.trim() || 'there'
   const unsubUrl    = `https://app.reconnectbase.com/unsubscribe?email=${encodeURIComponent(email)}`
@@ -347,7 +348,7 @@ async function sendAccessEmail(
                style="margin-bottom:16px">
           <tr>
             <td align="center">
-              <a href="https://app.reconnectbase.com"
+              <a href={link}
                  style="display:inline-block;background:#1877F2;color:#ffffff;
                         font-weight:700;font-size:17px;padding:14px 44px;
                         border-radius:6px;text-decoration:none;font-family:Helvetica,Arial,sans-serif">
